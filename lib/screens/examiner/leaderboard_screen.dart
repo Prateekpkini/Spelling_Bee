@@ -5,7 +5,8 @@ import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/models/result.dart';
 import 'package:spelling_bee/providers/result_provider.dart';
 import 'package:spelling_bee/services/export_service.dart';
-import 'package:spelling_bee/widgets/responsive_scaffold.dart';
+import 'package:spelling_bee/widgets/glass_scaffold.dart';
+import 'package:spelling_bee/widgets/glass_container.dart';
 
 class LeaderboardScreen extends ConsumerStatefulWidget {
   const LeaderboardScreen({super.key});
@@ -25,15 +26,15 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Excel file exported successfully!'),
-            backgroundColor: AppColors.success,
+            content: Text('Excel file exported successfully!', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -48,15 +49,15 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('PDF file exported successfully!'),
-            backgroundColor: AppColors.success,
+            content: Text('PDF file exported successfully!', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -68,102 +69,117 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
   Widget build(BuildContext context) {
     final resultsAsync = ref.watch(resultsStreamProvider);
 
-    return ResponsiveScaffold(
+    return GlassScaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/dashboard'),
         ),
-        title: const Text('Leaderboard'),
+        title: const Text('Leaderboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
-      child: resultsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error loading results: $e')),
-        data: (results) {
-          if (results.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          padding: const EdgeInsets.all(24),
+          child: resultsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700))),
+            error: (e, _) => Center(child: Text('Error loading results: $e', style: const TextStyle(color: Colors.white))),
+            data: (results) {
+              if (results.isEmpty) {
+                return GlassContainer(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.emoji_events_outlined, size: 64, color: Colors.white.withOpacity(0.5)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No results yet',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Results will appear here after students complete the championship.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.emoji_events_outlined, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.3)),
-                  const SizedBox(height: 16),
+                  // Export buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _exporting ? null : () => _exportExcel(results),
+                          icon: const Icon(Icons.table_chart_outlined),
+                          label: const Text('Export Excel', style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: const Color(0xFF0A1128),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _exporting ? null : () => _exportPdf(results),
+                          icon: const Icon(Icons.picture_as_pdf_outlined),
+                          label: const Text('Export PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: const Color(0xFF0A1128),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
                   Text(
-                    'No results yet',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppColors.textSecondary,
+                    '${results.length} Participants',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Results will appear here after students complete the championship.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 16),
+
+                  // Results list
+                  Expanded(
+                    child: GlassContainer(
+                      padding: const EdgeInsets.all(16),
+                      child: ListView.builder(
+                        itemCount: results.length,
+                        itemBuilder: (context, index) {
+                          final r = results[index];
+                          return _ResultCard(rank: index + 1, result: r);
+                        },
+                      ),
+                    ),
                   ),
                 ],
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              // Export buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _exporting ? null : () => _exportExcel(results),
-                        icon: const Icon(Icons.table_chart_outlined, size: 18),
-                        label: const Text('Excel'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 40),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _exporting ? null : () => _exportPdf(results),
-                        icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                        label: const Text('PDF'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 40),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Row(
-                  children: [
-                    Text(
-                      '${results.length} Participants',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Results list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  itemCount: results.length,
-                  itemBuilder: (context, index) {
-                    final r = results[index];
-                    return _ResultCard(rank: index + 1, result: r);
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -179,54 +195,60 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     Color rankColor;
     IconData? rankIcon;
+    bool isTop3 = rank <= 3;
+
     if (rank == 1) {
-      rankColor = const Color(0xFFFFD700);
+      rankColor = const Color(0xFFFFD700); // Gold
       rankIcon = Icons.emoji_events;
     } else if (rank == 2) {
-      rankColor = const Color(0xFFC0C0C0);
+      rankColor = const Color(0xFFC0C0C0); // Silver
       rankIcon = Icons.emoji_events;
     } else if (rank == 3) {
-      rankColor = const Color(0xFFCD7F32);
+      rankColor = const Color(0xFFCD7F32); // Bronze
       rankIcon = Icons.emoji_events;
     } else {
-      rankColor = AppColors.textSecondary;
+      rankColor = Colors.white54;
       rankIcon = null;
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: isTop3 ? rankColor.withOpacity(0.1) : Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: rank <= 3 ? rankColor.withValues(alpha: 0.3) : const Color(0xFFE8E8E8),
+          color: isTop3 ? rankColor.withOpacity(0.5) : Colors.white.withOpacity(0.1),
+          width: isTop3 ? 2 : 1,
         ),
+        boxShadow: isTop3
+            ? [BoxShadow(color: rankColor.withOpacity(0.2), blurRadius: 10, spreadRadius: 1)]
+            : [],
       ),
       child: Row(
         children: [
           // Rank badge
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: rankColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: rankColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: rankIcon != null
-                  ? Icon(rankIcon, color: rankColor, size: 22)
+                  ? Icon(rankIcon, color: rankColor, size: 24)
                   : Text(
                       '$rank',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: rankColor,
-                        fontSize: 16,
+                        fontSize: 18,
                       ),
                     ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
 
           // Name & grade
           Expanded(
@@ -235,12 +257,18 @@ class _ResultCard extends StatelessWidget {
               children: [
                 Text(
                   result.studentName,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
                 Text(
                   'Grade ${result.grade}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white70,
+                      ),
                 ),
               ],
             ),
@@ -253,12 +281,17 @@ class _ResultCard extends StatelessWidget {
               Text(
                 '${result.finalScore} pts',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primaryDeep,
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
                     ),
               ),
+              const SizedBox(height: 4),
               Text(
                 '${result.correctAnswers}✓ ${result.wrongAnswers}✗ ${result.accuracy.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
               ),
             ],
           ),

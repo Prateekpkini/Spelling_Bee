@@ -13,8 +13,11 @@ import 'package:spelling_bee/screens/error_screen.dart';
 /// GoRouter provider with auth-aware routing.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/play',
+    initialLocation: '/login',
     redirect: (context, state) {
+      // Base URL redirects to login
+      if (state.uri.path == '/') return '/login';
+
       // Check if this is a student-facing route (starts with /play)
       final isPlayerRoute = state.uri.path.startsWith('/play');
 
