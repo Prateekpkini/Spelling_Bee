@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655739936184",
+    "project_id": "everest-spelling-bee-26",
+    "storage_bucket": "everest-spelling-bee-26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655739936184:android:eb4a6aeed8530238d7434d",
+        "android_client_info": {
+          "package_name": "com.example.spelling_bee"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3PLKkQLPYOyEWRXRCx74kt1Z5GheWIlg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
