@@ -7,7 +7,7 @@ import 'package:spelling_bee/models/student.dart';
 import 'package:spelling_bee/providers/student_provider.dart';
 import 'package:spelling_bee/widgets/glass_scaffold.dart';
 import 'package:spelling_bee/widgets/glass_container.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 
 class RegisterStudentScreen extends ConsumerStatefulWidget {
   const RegisterStudentScreen({super.key});
@@ -78,7 +78,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
       } else {
         baseUrl = 'https://everest-spelling-bee-26.web.app';
       }
-      final link = '$baseUrl/play?token=$token';
+      final link = kReleaseMode ? '$baseUrl/play?token=$token' : '$baseUrl/#/play?token=$token';
 
       setState(() {
         _generatedLink = link;
@@ -171,13 +171,15 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               final stats = _buildQuickStats();
 
               if (isDesktop) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: content),
-                    const SizedBox(width: 24),
-                    Expanded(flex: 2, child: stats),
-                  ],
+                return SingleChildScrollView(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: content),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 2, child: stats),
+                    ],
+                  ),
                 );
               }
               return SingleChildScrollView(

@@ -6,6 +6,8 @@ import 'package:spelling_bee/models/word.dart';
 import 'package:spelling_bee/models/result.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:spelling_bee/data/mock_words.dart';
+
 // Only import dart:html conditionally so it compiles on Android too
 import 'package:universal_html/html.dart' as html;
 
@@ -14,20 +16,7 @@ class FirestoreService {
   List<Student> _students = [];
   final List<Result> _results = [];
   
-  final List<Word> _words = [
-    const Word(
-      id: '1', grade: '1', spellingBritish: 'colour', spellingAmerican: 'color',
-      partOfSpeech: 'noun', meaning: 'The property possessed by an object of producing different sensations on the eye.', jumbledLetters: 'oulroc',
-    ),
-    const Word(
-      id: '2', grade: '1', spellingBritish: 'centre', spellingAmerican: 'center',
-      partOfSpeech: 'noun', meaning: 'The middle point of a circle or sphere.', jumbledLetters: 'etncer',
-    ),
-    const Word(
-      id: '3', grade: '1', spellingBritish: 'flavour', spellingAmerican: 'flavor',
-      partOfSpeech: 'noun', meaning: 'The distinctive taste of a food or drink.', jumbledLetters: 'vraoufl',
-    ),
-  ];
+  final List<Word> _words = mockWords;
 
   final _studentsController = StreamController<List<Student>>.broadcast();
   final _resultsController = StreamController<List<Result>>.broadcast();

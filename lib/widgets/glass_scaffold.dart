@@ -14,24 +14,22 @@ class GlassScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: appBar,
-      floatingActionButton: floatingActionButton,
-      backgroundColor: Colors.transparent, // Background handled by Container
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0A1128), // Midnight Blue
-              Color(0xFF102B6E), // Royal Blue
-            ],
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0A1128), // Midnight Blue
+            Color(0xFF102B6E), // Royal Blue
+          ],
         ),
-        child: SafeArea(child: body),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: appBar,
+        floatingActionButton: floatingActionButton,
+        body: SafeArea(child: body),
       ),
     );
   }
