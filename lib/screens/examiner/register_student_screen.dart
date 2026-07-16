@@ -166,7 +166,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
           padding: const EdgeInsets.all(24),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth > 700;
+              final isDesktop = constraints.maxWidth > 800;
               final content = _generatedLink != null ? _buildSuccessView() : _buildForm();
               final stats = _buildQuickStats();
 

@@ -25,7 +25,7 @@ class ResponsiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth <= 600;
+        final isMobile = constraints.maxWidth <= 800;
 
         if (isMobile) {
           return Scaffold(

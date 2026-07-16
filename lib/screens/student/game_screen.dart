@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/providers/game_provider.dart';
+import 'package:spelling_bee/providers/theme_provider.dart';
 import 'package:spelling_bee/services/tts_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -11,14 +12,8 @@ import 'package:spelling_bee/services/tts_service.dart';
 // ═══════════════════════════════════════════════════════════════════════
 class _GC {
   _GC._();
-  // Background gradient
-  static const Color bgStart = Color(0xFF0A0E27);      // Midnight blue
-  static const Color bgMid = Color(0xFF141852);         // Deep indigo
-  static const Color bgEnd = Color(0xFF1A0A3E);         // Deep violet
 
   // Glass
-  static const Color glassFill = Color(0x18FFFFFF);     // ~9% white
-  static const Color glassBorder = Color(0x30FFFFFF);   // ~19% white
   static const Color glassHighlight = Color(0x10FFFFFF); // ~6% white
 
   // Text
@@ -32,7 +27,6 @@ class _GC {
   static const Color wrong = Color(0xFFFF1744);         // Vivid red
   static const Color wrongGlow = Color(0x40FF1744);
   static const Color gold = Color(0xFFFFD54F);          // Amber gold
-  static const Color goldDim = Color(0xCCFFD54F);
   static const Color shieldPink = Color(0xFFFF4D6D);
   static const Color pass = Color(0xFF64B5F6);          // Soft blue
   static const Color passGlow = Color(0x4064B5F6);
@@ -41,7 +35,7 @@ class _GC {
 // ═══════════════════════════════════════════════════════════════════════
 // GlassContainer – reusable frosted glass panel
 // ═══════════════════════════════════════════════════════════════════════
-class _GlassContainer extends StatelessWidget {
+class _GlassContainer extends ConsumerWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
@@ -59,7 +53,8 @@ class _GlassContainer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
     return Container(
       margin: margin,
       child: ClipRRect(
@@ -69,10 +64,10 @@ class _GlassContainer extends StatelessWidget {
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: fillOverride ?? _GC.glassFill,
+              color: fillOverride ?? theme.glassFill,
               borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(
-                color: borderOverride ?? _GC.glassBorder,
+                color: borderOverride ?? theme.glassBorder,
                 width: 1,
               ),
             ),
@@ -89,28 +84,55 @@ class _GlassContainer extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════
 class _AnimatedGradientBg extends StatefulWidget {
   final Widget child;
-  const _AnimatedGradientBg({required this.child});
+  final ThemeState theme;
+  const _AnimatedGradientBg({required this.theme, required this.child});
 
   @override
   State<_AnimatedGradientBg> createState() => _AnimatedGradientBgState();
 }
 
 class _AnimatedGradientBgState extends State<_AnimatedGradientBg>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final AnimationController _colorCtrl;
+  late List<Color> _currentColors;
+  late List<Color> _targetColors;
 
   @override
   void initState() {
     super.initState();
+    _currentColors = widget.theme.backgroundColors;
+    _targetColors = widget.theme.backgroundColors;
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
     )..repeat(reverse: true);
+    _colorCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..addListener(() {
+        setState(() {});
+      });
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedGradientBg oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.theme != oldWidget.theme) {
+      _currentColors = [
+        Color.lerp(_currentColors[0], _targetColors[0], _colorCtrl.value)!,
+        Color.lerp(_currentColors[1], _targetColors[1], _colorCtrl.value)!,
+        Color.lerp(_currentColors[2], _targetColors[2], _colorCtrl.value)!,
+      ];
+      _targetColors = widget.theme.backgroundColors;
+      _colorCtrl.forward(from: 0.0);
+    }
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _colorCtrl.dispose();
     super.dispose();
   }
 
@@ -120,12 +142,20 @@ class _AnimatedGradientBgState extends State<_AnimatedGradientBg>
       animation: _ctrl,
       builder: (context, child) {
         final t = _ctrl.value;
+        final ct = _colorCtrl.value;
+
+        final colors = [
+          Color.lerp(_currentColors[0], _targetColors[0], ct)!,
+          Color.lerp(_currentColors[1], _targetColors[1], ct)!,
+          Color.lerp(_currentColors[2], _targetColors[2], ct)!,
+        ];
+
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment(0.5 + 0.5 * math.sin(t * math.pi), 1.0),
-              colors: const [_GC.bgStart, _GC.bgMid, _GC.bgEnd],
+              colors: colors,
               stops: [0, 0.4 + 0.1 * t, 1.0],
             ),
           ),
@@ -189,13 +219,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _showSurrenderDialog() {
+    final theme = ref.read(themeProvider);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: AlertDialog(
-          backgroundColor: const Color(0xFF1A1A3E),
+          backgroundColor: theme.backgroundColors.last,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Surrender?', style: TextStyle(color: _GC.textBright)),
           content: const Text(
@@ -224,6 +255,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
+    final theme = ref.watch(themeProvider);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startIfNeeded();
@@ -237,11 +269,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     return Scaffold(
       body: _AnimatedGradientBg(
+        theme: theme,
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               // Mobile-first bounded canvas
-              final maxW = constraints.maxWidth > 520 ? 500.0 : constraints.maxWidth;
+              final maxW = constraints.maxWidth > 800 ? 500.0 : constraints.maxWidth;
+              final isCompact = MediaQuery.of(context).size.height < 700;
+              
               return Center(
                 child: SizedBox(
                   width: maxW,
@@ -250,19 +285,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       Column(
                         children: [
                           // ─── HUD ────────────────────────────────
-                          _buildHud(gameState),
+                          _buildHud(gameState, theme, isCompact),
 
                           // ─── Main content ───────────────────────
                           Expanded(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+                              padding: EdgeInsets.fromLTRB(14, isCompact ? 6 : 12, 14, isCompact ? 12 : 24),
                               child: Column(
                                 children: [
-                                  _buildWordCard(gameState),
-                                  const SizedBox(height: 16),
-                                  _buildAnswerInput(gameState),
-                                  const SizedBox(height: 16),
-                                  _buildActionButtons(gameState),
+                                  _buildWordCard(gameState, theme, isCompact),
+                                  SizedBox(height: isCompact ? 10 : 16),
+                                  _buildAnswerInput(gameState, theme, isCompact),
+                                  SizedBox(height: isCompact ? 10 : 16),
+                                  _buildActionButtons(gameState, theme, isCompact),
                                 ],
                               ),
                             ),
@@ -286,7 +321,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ═══════════════════════════════════════════════════════════════════
   // HUD – Glassmorphism top bar
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildHud(GameState state) {
+  Widget _buildHud(GameState state, ThemeState theme, bool isCompact) {
     final minutes = state.minutes;
     final seconds = state.seconds;
     final timerColor = minutes < 2
@@ -296,8 +331,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
             : _GC.correct;
 
     return _GlassContainer(
-      margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      margin: EdgeInsets.fromLTRB(14, isCompact ? 4 : 8, 14, 0),
+      padding: EdgeInsets.fromLTRB(14, isCompact ? 8 : 12, 14, isCompact ? 8 : 12),
       borderRadius: 18,
       child: Column(
         children: [
@@ -305,13 +340,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.timer_outlined, color: timerColor, size: 22),
+              Icon(Icons.timer_outlined, color: timerColor, size: isCompact ? 18 : 22),
               const SizedBox(width: 6),
               Text(
                 '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
                 style: TextStyle(
                   color: timerColor,
-                  fontSize: 30,
+                  fontSize: isCompact ? 24 : 30,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
                   shadows: [
@@ -321,18 +356,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isCompact ? 6 : 10),
 
           // Score / Correct / Wrong
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _GlowStat(label: 'Score', value: '${state.score}', color: _GC.gold),
-              _GlowStat(label: 'Correct', value: '${state.correctCount}', color: _GC.correct),
-              _GlowStat(label: 'Wrong', value: '${state.wrongCount}', color: _GC.wrong),
+              _GlowStat(label: 'Score', value: '${state.score}', color: _GC.gold, isCompact: isCompact),
+              _GlowStat(label: 'Correct', value: '${state.correctCount}', color: _GC.correct, isCompact: isCompact),
+              _GlowStat(label: 'Wrong', value: '${state.wrongCount}', color: _GC.wrong, isCompact: isCompact),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isCompact ? 6 : 10),
 
           // Shields & Passes
           Row(
@@ -348,7 +383,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     child: Icon(
                       active ? Icons.favorite : Icons.favorite_border,
                       color: active ? _GC.shieldPink : _GC.textDim,
-                      size: 20,
+                      size: isCompact ? 16 : 20,
                       shadows: active
                           ? [Shadow(color: _GC.shieldPink.withOpacity(0.6), blurRadius: 6)]
                           : null,
@@ -359,23 +394,23 @@ class _GameScreenState extends ConsumerState<GameScreen>
               const SizedBox(width: 16),
               // Passes chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 10, vertical: isCompact ? 2 : 4),
                 decoration: BoxDecoration(
                   color: _GC.glassHighlight,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _GC.glassBorder, width: 0.5),
+                  border: Border.all(color: theme.glassBorder, width: 0.5),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.skip_next, color: _GC.pass, size: 16),
+                    Icon(Icons.skip_next, color: _GC.pass, size: isCompact ? 14 : 16),
                     const SizedBox(width: 4),
                     Text(
                       '${state.passes}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _GC.pass,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: isCompact ? 12 : 14,
                       ),
                     ),
                   ],
@@ -391,12 +426,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ═══════════════════════════════════════════════════════════════════
   // Word Card – Glassmorphism
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildWordCard(GameState state) {
+  Widget _buildWordCard(GameState state, ThemeState theme, bool isCompact) {
     final word = state.currentWord;
     if (word == null) return const SizedBox.shrink();
 
     return _GlassContainer(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isCompact ? 12 : 20),
       child: Column(
         children: [
           // Pronounce button with glow
@@ -413,14 +448,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
             ),
             child: SizedBox(
               width: double.infinity,
-              height: 56,
+              height: isCompact ? 46 : 56,
               child: ElevatedButton.icon(
                 onPressed: () => _ttsService.speak(word.spellingBritish),
-                icon: const Icon(Icons.volume_up_rounded, size: 28),
-                label: const Text('Pronounce Word', style: TextStyle(fontSize: 18)),
+                icon: Icon(Icons.volume_up_rounded, size: isCompact ? 22 : 28),
+                label: Text('Pronounce Word', style: TextStyle(fontSize: isCompact ? 16 : 18)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _GC.gold,
-                  foregroundColor: _GC.bgStart,
+                  foregroundColor: theme.backgroundColors[0],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -429,23 +464,25 @@ class _GameScreenState extends ConsumerState<GameScreen>
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: isCompact ? 12 : 20),
 
           // Part of speech
           _GlassInfoLabel(
             icon: Icons.category_rounded,
             label: 'Part of Speech',
             value: word.partOfSpeech,
+            isCompact: isCompact,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isCompact ? 6 : 10),
 
           // Meaning
           _GlassInfoLabel(
             icon: Icons.menu_book_rounded,
             label: 'Meaning',
             value: word.meaning,
+            isCompact: isCompact,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isCompact ? 6 : 10),
 
           // Jumbled letters – highlighted
           _GlassInfoLabel(
@@ -453,6 +490,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             label: 'Jumbled Letters',
             value: word.jumbledLetters,
             highlight: true,
+            isCompact: isCompact,
           ),
         ],
       ),
@@ -462,7 +500,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ═══════════════════════════════════════════════════════════════════
   // Answer Input – Glassmorphism
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildAnswerInput(GameState state) {
+  Widget _buildAnswerInput(GameState state, ThemeState theme, bool isCompact) {
     final isPlaying = state.status == GameStatus.playing;
 
     return _GlassContainer(
@@ -475,8 +513,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
         enabled: isPlaying,
         textInputAction: TextInputAction.done,
         onSubmitted: (_) => _submitAnswer(),
-        style: const TextStyle(
-          fontSize: 22,
+        style: TextStyle(
+          fontSize: isCompact ? 18 : 22,
           fontWeight: FontWeight.w600,
           letterSpacing: 3,
           color: _GC.textBright,
@@ -487,11 +525,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
           hintText: 'Type your answer...',
           hintStyle: TextStyle(
             color: _GC.textDim,
-            fontSize: 18,
+            fontSize: isCompact ? 15 : 18,
             fontWeight: FontWeight.w400,
             letterSpacing: 0,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: isCompact ? 12 : 18),
           filled: true,
           fillColor: Colors.transparent,
           border: OutlineInputBorder(
@@ -514,7 +552,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ═══════════════════════════════════════════════════════════════════
   // Action Buttons – Glass-wrapped
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildActionButtons(GameState state) {
+  Widget _buildActionButtons(GameState state, ThemeState theme, bool isCompact) {
     final isPlaying = state.status == GameStatus.playing;
 
     return Column(
@@ -533,15 +571,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
           ),
           child: SizedBox(
             width: double.infinity,
-            height: 54,
+            height: isCompact ? 46 : 54,
             child: ElevatedButton.icon(
               onPressed: isPlaying ? _submitAnswer : null,
-              icon: const Icon(Icons.check_circle_rounded),
-              label: const Text('Submit Answer', style: TextStyle(fontSize: 16)),
+              icon: Icon(Icons.check_circle_rounded, size: isCompact ? 20 : 24),
+              label: Text('Submit Answer', style: TextStyle(fontSize: isCompact ? 14 : 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _GC.correct,
-                foregroundColor: _GC.bgStart,
-                disabledBackgroundColor: _GC.glassFill,
+                foregroundColor: theme.backgroundColors[0],
+                disabledBackgroundColor: theme.glassFill,
                 disabledForegroundColor: _GC.textDim,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -551,7 +589,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: isCompact ? 6 : 10),
 
         // Pass & Surrender row
         Row(
@@ -560,16 +598,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
               child: _GlassContainer(
                 borderRadius: 14,
                 child: SizedBox(
-                  height: 48,
+                  height: isCompact ? 40 : 48,
                   child: TextButton.icon(
                     onPressed: isPlaying && state.passes > 0 ? _passWord : null,
                     icon: Icon(Icons.skip_next_rounded,
-                        size: 20, color: isPlaying && state.passes > 0 ? _GC.pass : _GC.textDim),
+                        size: isCompact ? 16 : 20, color: isPlaying && state.passes > 0 ? _GC.pass : _GC.textDim),
                     label: Text(
                       'Pass (${state.passes})',
                       style: TextStyle(
                         color: isPlaying && state.passes > 0 ? _GC.pass : _GC.textDim,
                         fontWeight: FontWeight.w600,
+                        fontSize: isCompact ? 13 : 14,
                       ),
                     ),
                   ),
@@ -582,16 +621,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 borderRadius: 14,
                 borderOverride: _GC.wrong.withOpacity(0.3),
                 child: SizedBox(
-                  height: 48,
+                  height: isCompact ? 40 : 48,
                   child: TextButton.icon(
                     onPressed: isPlaying ? _showSurrenderDialog : null,
                     icon: Icon(Icons.flag_rounded,
-                        size: 20, color: isPlaying ? _GC.wrong : _GC.textDim),
+                        size: isCompact ? 16 : 20, color: isPlaying ? _GC.wrong : _GC.textDim),
                     label: Text(
                       'Surrender',
                       style: TextStyle(
                         color: isPlaying ? _GC.wrong : _GC.textDim,
                         fontWeight: FontWeight.w600,
+                        fontSize: isCompact ? 13 : 14,
                       ),
                     ),
                   ),
@@ -729,8 +769,9 @@ class _GlowStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool isCompact;
 
-  const _GlowStat({required this.label, required this.value, required this.color});
+  const _GlowStat({required this.label, required this.value, required this.color, this.isCompact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -740,7 +781,7 @@ class _GlowStat extends StatelessWidget {
           value,
           style: TextStyle(
             color: color,
-            fontSize: 22,
+            fontSize: isCompact ? 18 : 22,
             fontWeight: FontWeight.w700,
             shadows: [Shadow(color: color.withOpacity(0.5), blurRadius: 6)],
           ),
@@ -748,7 +789,7 @@ class _GlowStat extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(color: _GC.textDim, fontSize: 11),
+          style: TextStyle(color: _GC.textDim, fontSize: isCompact ? 10 : 11),
         ),
       ],
     );
@@ -760,19 +801,21 @@ class _GlassInfoLabel extends StatelessWidget {
   final String label;
   final String value;
   final bool highlight;
+  final bool isCompact;
 
   const _GlassInfoLabel({
     required this.icon,
     required this.label,
     required this.value,
     this.highlight = false,
+    this.isCompact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isCompact ? 8 : 12),
       decoration: BoxDecoration(
         color: highlight ? _GC.gold.withOpacity(0.08) : _GC.glassHighlight,
         borderRadius: BorderRadius.circular(12),
@@ -785,26 +828,26 @@ class _GlassInfoLabel extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: _GC.textDim),
+              Icon(icon, size: isCompact ? 12 : 14, color: _GC.textDim),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 11,
+                style: TextStyle(
+                  fontSize: isCompact ? 10 : 11,
                   fontWeight: FontWeight.w600,
                   color: _GC.textDim,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: isCompact ? 4 : 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: highlight ? 20 : 15,
+              fontSize: highlight ? (isCompact ? 16 : 20) : (isCompact ? 14 : 15),
               fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
               color: highlight ? _GC.gold : _GC.textBright,
-              letterSpacing: highlight ? 4 : 0,
+              letterSpacing: highlight ? (isCompact ? 2 : 4) : 0,
               shadows: highlight
                   ? [Shadow(color: _GC.gold.withOpacity(0.4), blurRadius: 6)]
                   : null,
