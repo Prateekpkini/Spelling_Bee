@@ -17,17 +17,20 @@ router.get('/validate/:token', async (req, res) => {
       [token]
     );
 
+    const [settings] = await pool.execute('SELECT event_name FROM global_settings WHERE id = 1');
+    const eventName = settings.length > 0 ? settings[0].event_name : 'Everest Spelling Bee Open Challenge';
+
     if (rows.length === 0) {
-      return res.json({ status: 'not_found', student: null });
+      return res.json({ status: 'not_found', student: null, event_name: eventName });
     }
 
     const student = rows[0];
 
     if (student.token_status === 'used') {
-      return res.json({ status: 'used', student });
+      return res.json({ status: 'used', student, event_name: eventName });
     }
 
-    res.json({ status: 'active', student });
+    res.json({ status: 'active', student, event_name: eventName });
   } catch (err) {
     console.error('Validate token error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -133,6 +136,21 @@ router.post('/submit', async (req, res) => {
     });
   } catch (err) {
     console.error('Submit result error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/game/config
+ * Returns public global settings (like event_name).
+ */
+router.get('/config', async (req, res) => {
+  try {
+    const [settings] = await pool.execute('SELECT event_name FROM global_settings WHERE id = 1');
+    const eventName = settings.length > 0 ? settings[0].event_name : 'Everest Spelling Bee Open Challenge';
+    res.json({ event_name: eventName });
+  } catch (err) {
+    console.error('Get config error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

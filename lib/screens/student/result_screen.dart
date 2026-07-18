@@ -4,12 +4,40 @@ import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/providers/game_provider.dart';
 import 'package:spelling_bee/widgets/responsive_scaffold.dart';
 
-class ResultScreen extends ConsumerWidget {
+import 'package:spelling_bee/services/api_service.dart';
+
+class ResultScreen extends ConsumerStatefulWidget {
   final String studentId;
   const ResultScreen({super.key, required this.studentId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<ResultScreen> {
+  String _eventName = 'Everest Spelling Bee Open Challenge';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final config = await apiService.getConfig();
+      if (mounted) {
+        setState(() {
+          _eventName = config['event_name'] ?? _eventName;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load config: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
 
     String endMessage;
@@ -48,6 +76,14 @@ class ResultScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
+            const SizedBox(height: 10),
+            Text(
+              _eventName,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
 
             // End reason badge

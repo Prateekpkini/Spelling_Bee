@@ -112,7 +112,8 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
             return _buildUsed();
           } else if (status == 'active') {
             final student = Student.fromJson(result['student']);
-            return _buildIntro(student);
+            final eventName = result['event_name'] ?? 'Everest Spelling Bee Open Challenge';
+            return _buildIntro(student, eventName);
           }
           
           return _buildError('Unknown error.');
@@ -191,7 +192,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
     );
   }
 
-  Widget _buildIntro(Student student) {
+  Widget _buildIntro(Student student, String eventName) {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -219,7 +220,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Everest Spelling Bee',
+              eventName,
               style: Theme.of(context).textTheme.headlineLarge,
               textAlign: TextAlign.center,
             ),

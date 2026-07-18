@@ -111,7 +111,7 @@ class ApiService {
     }
   }
 
-  Future<void> updateSettings(int timerSeconds, int initialShields, int initialPasses) async {
+  Future<void> updateSettings(int timerSeconds, int initialShields, int initialPasses, String eventName) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/admin/settings'),
       headers: _headers,
@@ -119,11 +119,26 @@ class ApiService {
         'timer_seconds': timerSeconds,
         'initial_shields': initialShields,
         'initial_passes': initialPasses,
+        'event_name': eventName,
       }),
     );
 
     if (response.statusCode != 200) {
       final error = jsonDecode(response.body)['error'] ?? 'Failed to update settings';
+      throw Exception(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> getConfig() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/game/config'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch config';
       throw Exception(error);
     }
   }

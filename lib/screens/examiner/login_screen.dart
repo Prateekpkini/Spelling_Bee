@@ -5,6 +5,7 @@ import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/providers/auth_provider.dart';
 import 'package:spelling_bee/widgets/glass_scaffold.dart';
 import 'package:spelling_bee/widgets/glass_container.dart';
+import 'package:spelling_bee/services/api_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String _eventName = 'Everest Spelling Bee Open Challenge';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final config = await apiService.getConfig();
+      if (mounted) {
+        setState(() {
+          _eventName = config['event_name'] ?? _eventName;
+        });
+      }
+    } catch(e) {
+      // Ignore config load error
+    }
+  }
 
   @override
   void dispose() {
@@ -123,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Everest Spelling Bee',
+                      _eventName,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

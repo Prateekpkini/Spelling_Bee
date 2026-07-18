@@ -4,12 +4,39 @@ import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/providers/auth_provider.dart';
 import 'package:spelling_bee/widgets/glass_scaffold.dart';
 import 'package:spelling_bee/widgets/glass_container.dart';
+import 'package:spelling_bee/services/api_service.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  String _eventName = 'Everest Spelling Bee Open Challenge';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final config = await apiService.getConfig();
+      if (mounted) {
+        setState(() {
+          _eventName = config['event_name'] ?? _eventName;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load config: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GlassScaffold(
       appBar: AppBar(
         title: const Text('Examiner Console', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -56,7 +83,7 @@ class DashboardScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Everest Spelling Bee',
+                            _eventName,
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,

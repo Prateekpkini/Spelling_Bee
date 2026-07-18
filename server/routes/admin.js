@@ -108,20 +108,20 @@ router.get('/settings', async (req, res) => {
 
 /**
  * PUT /api/admin/settings
- * Body: { timer_seconds, initial_shields, initial_passes }
+ * Body: { timer_seconds, initial_shields, initial_passes, event_name }
  * Updates global game settings.
  */
 router.put('/settings', async (req, res) => {
   try {
-    const { timer_seconds, initial_shields, initial_passes } = req.body;
+    const { timer_seconds, initial_shields, initial_passes, event_name } = req.body;
 
-    if (timer_seconds == null || initial_shields == null || initial_passes == null) {
-      return res.status(400).json({ error: 'timer_seconds, initial_shields, and initial_passes are required' });
+    if (timer_seconds == null || initial_shields == null || initial_passes == null || !event_name) {
+      return res.status(400).json({ error: 'timer_seconds, initial_shields, initial_passes, and event_name are required' });
     }
 
     await pool.execute(
-      'UPDATE global_settings SET timer_seconds = ?, initial_shields = ?, initial_passes = ? WHERE id = 1',
-      [parseInt(timer_seconds), parseInt(initial_shields), parseInt(initial_passes)]
+      'UPDATE global_settings SET timer_seconds = ?, initial_shields = ?, initial_passes = ?, event_name = ? WHERE id = 1',
+      [parseInt(timer_seconds), parseInt(initial_shields), parseInt(initial_passes), event_name]
     );
 
     res.json({
@@ -131,6 +131,7 @@ router.put('/settings', async (req, res) => {
         timer_seconds: parseInt(timer_seconds),
         initial_shields: parseInt(initial_shields),
         initial_passes: parseInt(initial_passes),
+        event_name: event_name,
       },
     });
   } catch (err) {

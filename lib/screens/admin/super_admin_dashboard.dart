@@ -18,6 +18,26 @@ class SuperAdminDashboard extends ConsumerStatefulWidget {
 
 class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
   int _selectedIndex = 0;
+  String _eventName = 'Everest Spelling Bee Open Challenge';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    try {
+      final config = await apiService.getConfig();
+      if (mounted) {
+        setState(() {
+          _eventName = config['event_name'] ?? _eventName;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load config: $e');
+    }
+  }
 
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.people, label: 'Manage Teachers'),
@@ -155,7 +175,7 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Everest Spelling Bee',
+                    _eventName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -200,7 +220,13 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
       case 0:
         return const _ManageTeachersTab();
       case 1:
-        return const _GameSettingsTab();
+        return _GameSettingsTab(
+          onSaved: (newName) {
+            setState(() {
+              _eventName = newName;
+            });
+          },
+        );
       case 2:
         return const _WordBankUploadTab();
       case 3:
@@ -529,7 +555,8 @@ class _ManageTeachersTabState extends State<_ManageTeachersTab> {
 // ══════════════════════════════════════════════════════════════════════
 
 class _GameSettingsTab extends StatefulWidget {
-  const _GameSettingsTab();
+  final Function(String) onSaved;
+  const _GameSettingsTab({required this.onSaved});
 
   @override
   State<_GameSettingsTab> createState() => _GameSettingsTabState();
@@ -539,6 +566,7 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
   final _timerCtrl = TextEditingController();
   final _shieldsCtrl = TextEditingController();
   final _passesCtrl = TextEditingController();
+  final _eventNameCtrl = TextEditingController();
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -553,6 +581,7 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
     _timerCtrl.dispose();
     _shieldsCtrl.dispose();
     _passesCtrl.dispose();
+    _eventNameCtrl.dispose();
     super.dispose();
   }
 
@@ -562,6 +591,7 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
       _timerCtrl.text = settings['timer_seconds'].toString();
       _shieldsCtrl.text = settings['initial_shields'].toString();
       _passesCtrl.text = settings['initial_passes'].toString();
+      _eventNameCtrl.text = settings['event_name']?.toString() ?? 'Everest Spelling Bee Open Challenge';
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -580,8 +610,10 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
         int.parse(_timerCtrl.text),
         int.parse(_shieldsCtrl.text),
         int.parse(_passesCtrl.text),
+        _eventNameCtrl.text.trim(),
       );
       if (mounted) {
+        widget.onSaved(_eventNameCtrl.text.trim());
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings saved successfully!'), backgroundColor: Colors.green),
         );
@@ -651,6 +683,12 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
             width: 450,
             child: Column(
               children: [
+                TextFormField(
+                  controller: _eventNameCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _settingsDeco('Event Name', Icons.event, 'e.g. Everest Spelling Bee'),
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _timerCtrl,
                   style: const TextStyle(color: Colors.white),

@@ -26,12 +26,13 @@ CREATE TABLE IF NOT EXISTS global_settings (
   id              INT PRIMARY KEY,
   timer_seconds   INT NOT NULL DEFAULT 1800,
   initial_shields INT NOT NULL DEFAULT 5,
-  initial_passes  INT NOT NULL DEFAULT 5
+  initial_passes  INT NOT NULL DEFAULT 5,
+  event_name      VARCHAR(255) NOT NULL DEFAULT 'Everest Spelling Bee Open Challenge'
 ) ENGINE=InnoDB;
 
 -- Seed default settings (30 minutes, 5 shields, 5 passes)
-INSERT INTO global_settings (id, timer_seconds, initial_shields, initial_passes)
-VALUES (1, 1800, 5, 5)
+INSERT INTO global_settings (id, timer_seconds, initial_shields, initial_passes, event_name)
+VALUES (1, 1800, 5, 5, 'Everest Spelling Bee Open Challenge')
 ON DUPLICATE KEY UPDATE id = id;
 
 -- ── 3. Students ────────────────────────────────────────────
