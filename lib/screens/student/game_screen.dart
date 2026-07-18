@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -290,13 +291,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           // ─── Main content ───────────────────────
                           Expanded(
                             child: SingleChildScrollView(
-                              padding: EdgeInsets.fromLTRB(14, isCompact ? 6 : 12, 14, isCompact ? 12 : 24),
+                              padding: EdgeInsets.fromLTRB(14, isCompact ? 4 : 8, 14, isCompact ? 6 : 12),
                               child: Column(
                                 children: [
                                   _buildWordCard(gameState, theme, isCompact),
-                                  SizedBox(height: isCompact ? 10 : 16),
+                                  SizedBox(height: isCompact ? 6 : 10),
                                   _buildAnswerInput(gameState, theme, isCompact),
-                                  SizedBox(height: isCompact ? 10 : 16),
+                                  SizedBox(height: isCompact ? 6 : 10),
                                   _buildActionButtons(gameState, theme, isCompact),
                                 ],
                               ),
@@ -306,7 +307,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       ),
 
                       // ─── Feedback overlay ────────────────────
-                      if (gameState.feedback != null) _buildFeedbackOverlay(gameState),
+                      if (gameState.feedback != null) _FeedbackOverlay(state: gameState, answerFocus: _answerFocus),
                     ],
                   ),
                 ),
@@ -331,9 +332,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
             : _GC.correct;
 
     return _GlassContainer(
-      margin: EdgeInsets.fromLTRB(14, isCompact ? 4 : 8, 14, 0),
-      padding: EdgeInsets.fromLTRB(14, isCompact ? 8 : 12, 14, isCompact ? 8 : 12),
-      borderRadius: 18,
+      margin: EdgeInsets.fromLTRB(14, isCompact ? 2 : 4, 14, 0),
+      padding: EdgeInsets.fromLTRB(14, isCompact ? 4 : 8, 14, isCompact ? 4 : 8),
+      borderRadius: 16,
       child: Column(
         children: [
           // Timer
@@ -431,7 +432,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (word == null) return const SizedBox.shrink();
 
     return _GlassContainer(
-      padding: EdgeInsets.all(isCompact ? 12 : 20),
+      padding: EdgeInsets.all(isCompact ? 8 : 12),
       child: Column(
         children: [
           // Pronounce button with glow
@@ -448,7 +449,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             ),
             child: SizedBox(
               width: double.infinity,
-              height: isCompact ? 46 : 56,
+              height: isCompact ? 38 : 46,
               child: ElevatedButton.icon(
                 onPressed: () => _ttsService.speak(word.spellingBritish),
                 icon: Icon(Icons.volume_up_rounded, size: isCompact ? 22 : 28),
@@ -529,7 +530,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             fontWeight: FontWeight.w400,
             letterSpacing: 0,
           ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: isCompact ? 12 : 18),
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: isCompact ? 8 : 12),
           filled: true,
           fillColor: Colors.transparent,
           border: OutlineInputBorder(
@@ -571,7 +572,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
           ),
           child: SizedBox(
             width: double.infinity,
-            height: isCompact ? 46 : 54,
+            height: isCompact ? 40 : 48,
             child: ElevatedButton.icon(
               onPressed: isPlaying ? _submitAnswer : null,
               icon: Icon(Icons.check_circle_rounded, size: isCompact ? 20 : 24),
@@ -598,7 +599,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               child: _GlassContainer(
                 borderRadius: 14,
                 child: SizedBox(
-                  height: isCompact ? 40 : 48,
+                  height: isCompact ? 36 : 42,
                   child: TextButton.icon(
                     onPressed: isPlaying && state.passes > 0 ? _passWord : null,
                     icon: Icon(Icons.skip_next_rounded,
@@ -621,7 +622,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 borderRadius: 14,
                 borderOverride: _GC.wrong.withOpacity(0.3),
                 child: SizedBox(
-                  height: isCompact ? 40 : 48,
+                  height: isCompact ? 36 : 42,
                   child: TextButton.icon(
                     onPressed: isPlaying ? _showSurrenderDialog : null,
                     icon: Icon(Icons.flag_rounded,
@@ -645,10 +646,60 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // Feedback Overlay – Glass + Glow
+  // Feedback Overlay – Glass + Glow + 5-second auto-next timer
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildFeedbackOverlay(GameState state) {
-    final feedback = state.feedback!;
+}
+
+class _FeedbackOverlay extends ConsumerStatefulWidget {
+  final GameState state;
+  final FocusNode answerFocus;
+
+  const _FeedbackOverlay({required this.state, required this.answerFocus});
+
+  @override
+  ConsumerState<_FeedbackOverlay> createState() => _FeedbackOverlayState();
+}
+
+class _FeedbackOverlayState extends ConsumerState<_FeedbackOverlay> {
+  Timer? _timer;
+  int _countdown = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_countdown > 1) {
+          _countdown--;
+        } else {
+          _timer?.cancel();
+          _proceed();
+        }
+      });
+    });
+  }
+
+  void _proceed() {
+    if (widget.state.status != GameStatus.ended) {
+      ref.read(gameProvider.notifier).nextWord();
+      widget.answerFocus.requestFocus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final feedback = widget.state.feedback!;
 
     Color accentColor;
     Color glowColor;
@@ -675,10 +726,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     return GestureDetector(
       onTap: () {
-        if (state.status != GameStatus.ended) {
-          ref.read(gameProvider.notifier).nextWord();
-          _answerFocus.requestFocus();
-        }
+        _timer?.cancel();
+        _proceed();
       },
       child: Container(
         color: Colors.black45,
@@ -746,7 +795,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 ],
                 const SizedBox(height: 20),
                 Text(
-                  'Tap to continue',
+                  'Continuing in $_countdown...',
+                  style: const TextStyle(
+                    color: _GC.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap to continue immediately',
                   style: TextStyle(
                     color: _GC.textDim,
                     fontSize: 13,
@@ -815,7 +873,7 @@ class _GlassInfoLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 8 : 12),
+      padding: EdgeInsets.all(isCompact ? 6 : 8),
       decoration: BoxDecoration(
         color: highlight ? _GC.gold.withOpacity(0.08) : _GC.glassHighlight,
         borderRadius: BorderRadius.circular(12),

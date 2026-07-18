@@ -50,12 +50,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final tokenService = ref.read(tokenServiceProvider);
-      final firestoreService = ref.read(firestoreServiceProvider);
-      final token = tokenService.generateToken();
-
-      final student = Student(
-        id: '',
+      final payload = RegisterStudentPayload(
         name: _nameCtrl.text.trim(),
         grade: _selectedGrade,
         section: _sectionCtrl.text.trim(),
@@ -65,11 +60,11 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
         district: _districtCtrl.text.trim(),
         state: _stateCtrl.text.trim(),
         parentMobile: _mobileCtrl.text.trim(),
-        token: token,
-        tokenStatus: 'active',
       );
 
-      await firestoreService.addStudent(student);
+      final token = await ref.read(registerStudentProvider(payload).future);
+
+
 
       String baseUrl;
       if (kIsWeb) {

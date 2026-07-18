@@ -1,13 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spelling_bee/models/result.dart';
-import 'package:spelling_bee/providers/student_provider.dart';
+import 'package:spelling_bee/services/api_service.dart';
 
-/// Real-time stream of all results sorted by leaderboard ranking.
-final resultsStreamProvider = StreamProvider<List<Result>>((ref) {
-  return ref.watch(firestoreServiceProvider).resultsStream();
-});
-
-/// One-shot fetch of all results for export.
-final resultsExportProvider = FutureProvider<List<Result>>((ref) async {
-  return ref.watch(firestoreServiceProvider).getResults();
+/// Provider for fetching all results for the leaderboard and export.
+final resultsProvider = FutureProvider<List<Result>>((ref) async {
+  return await apiService.getLeaderboard();
 });

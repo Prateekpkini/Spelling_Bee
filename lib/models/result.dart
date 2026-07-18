@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Result {
   final String id;
@@ -27,25 +27,27 @@ class Result {
     required this.createdAt,
   });
 
-  factory Result.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Result.fromJson(Map<String, dynamic> data) {
     return Result(
-      id: doc.id,
-      studentId: data['student_id'] ?? '',
+      id: data['id']?.toString() ?? '',
+      studentId: data['student_id']?.toString() ?? '',
       studentName: data['student_name'] ?? '',
       grade: data['grade'] ?? '',
-      finalScore: data['final_score'] ?? 0,
-      correctAnswers: data['correct_answers'] ?? 0,
-      wrongAnswers: data['wrong_answers'] ?? 0,
-      passesUsed: data['passes_used'] ?? 0,
-      timeRemainingSeconds: data['time_remaining_seconds'] ?? 0,
-      accuracy: (data['accuracy'] ?? 0).toDouble(),
-      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      finalScore: (data['final_score'] ?? 0).toInt(),
+      correctAnswers: (data['correct_answers'] ?? 0).toInt(),
+      wrongAnswers: (data['wrong_answers'] ?? 0).toInt(),
+      passesUsed: (data['passes_used'] ?? 0).toInt(),
+      timeRemainingSeconds: (data['time_remaining_seconds'] ?? 0).toInt(),
+      accuracy: double.tryParse(data['accuracy']?.toString() ?? '0') ?? 0.0,
+      createdAt: data['created_at'] != null 
+          ? DateTime.tryParse(data['created_at']) ?? DateTime.now() 
+          : DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'student_id': studentId,
       'student_name': studentName,
       'grade': grade,
@@ -55,7 +57,7 @@ class Result {
       'passes_used': passesUsed,
       'time_remaining_seconds': timeRemainingSeconds,
       'accuracy': accuracy,
-      'created_at': FieldValue.serverTimestamp(),
+      'created_at': createdAt.toIso8601String(),
     };
   }
 

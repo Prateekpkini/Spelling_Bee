@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Word {
   final String id;
@@ -19,11 +19,10 @@ class Word {
     required this.jumbledLetters,
   });
 
-  factory Word.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Word.fromJson(Map<String, dynamic> data) {
     return Word(
-      id: doc.id,
-      grade: data['grade'] ?? '',
+      id: data['id']?.toString() ?? '',
+      grade: data['grade']?.toString() ?? '',
       spellingBritish: data['spelling_british'] ?? '',
       spellingAmerican: data['spelling_american'] ?? '',
       partOfSpeech: data['part_of_speech'] ?? '',
@@ -32,8 +31,9 @@ class Word {
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'grade': grade,
       'spelling_british': spellingBritish,
       'spelling_american': spellingAmerican,

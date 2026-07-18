@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spelling_bee/models/word.dart';
 import 'package:spelling_bee/models/result.dart';
-import 'package:spelling_bee/providers/student_provider.dart';
+import 'package:spelling_bee/services/api_service.dart';
 
 // ── Game Status ──────────────────────────────────────────────────────
 
@@ -135,12 +135,15 @@ class GameNotifier extends StateNotifier<GameState> {
 
   GameNotifier(this._ref) : super(const GameState());
 
-  /// Initialize the game with a word bank and student info.
+  /// Initialize the game with a word bank, student info, and settings.
   void initGame({
     required List<Word> wordBank,
     required String studentId,
     required String studentName,
     required String grade,
+    required int timerSeconds,
+    required int initialShields,
+    required int initialPasses,
   }) {
     _timer?.cancel();
     state = GameState(
@@ -148,6 +151,9 @@ class GameNotifier extends StateNotifier<GameState> {
       studentId: studentId,
       studentName: studentName,
       grade: grade,
+      timeRemainingMs: timerSeconds * 1000,
+      shields: initialShields,
+      passes: initialPasses,
       status: GameStatus.ready,
     );
   }
@@ -357,7 +363,11 @@ class GameNotifier extends StateNotifier<GameState> {
       createdAt: DateTime.now(),
     );
 
-    await _ref.read(firestoreServiceProvider).saveResult(result);
+    try {
+      await apiService.submitResult(result);
+    } catch (e) {
+      print('Failed to save result: $e');
+    }
   }
 
   @override

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Student {
   final String id;
@@ -29,10 +29,9 @@ class Student {
     this.tokenStatus = 'active',
   });
 
-  factory Student.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Student.fromJson(Map<String, dynamic> data) {
     return Student(
-      id: doc.id,
+      id: data['id']?.toString() ?? '',
       name: data['name'] ?? '',
       grade: data['grade'] ?? '',
       section: data['section'] ?? '',
@@ -47,8 +46,9 @@ class Student {
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'grade': grade,
       'section': section,

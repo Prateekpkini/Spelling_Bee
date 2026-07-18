@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/models/student.dart';
+import 'package:spelling_bee/models/word.dart';
 import 'package:spelling_bee/providers/game_provider.dart';
 import 'package:spelling_bee/providers/student_provider.dart';
-import 'package:spelling_bee/services/token_service.dart';
+import 'package:spelling_bee/services/api_service.dart';
 import 'package:spelling_bee/widgets/responsive_scaffold.dart';
 
 /// Token validation + student intro screen.
@@ -18,13 +19,13 @@ class TokenScreen extends ConsumerStatefulWidget {
 }
 
 class _TokenScreenState extends ConsumerState<TokenScreen> {
-  late Future<TokenValidationResult> _validationFuture;
+  late Future<Map<String, dynamic>> _validationFuture;
   bool _isStarting = false;
 
   @override
   void initState() {
     super.initState();
-    _validationFuture = ref.read(tokenServiceProvider).validateToken(widget.token);
+    _validationFuture = apiService.validateToken(widget.token);
   }
 
   Future<void> _startChampionship(Student student) async {
@@ -32,12 +33,13 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
     setState(() => _isStarting = true);
 
     try {
-      // 1. Mark token as used — atomic transition
-      await ref.read(tokenServiceProvider).markTokenUsed(student.id);
+      final response = await apiService.startGame(widget.token);
+      
+      final wordsData = response['words'] as List<dynamic>;
+      final List<Word> words = wordsData.map((e) => Word.fromJson(e)).toList();
 
-      // 2. Load word bank
-      final words = await ref.read(firestoreServiceProvider).getWordsByGrade(student.grade);
-
+      final settings = response['settings'];
+      
       if (words.isEmpty) {
         if (mounted) {
           setState(() => _isStarting = false);
@@ -57,6 +59,9 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
             studentId: student.id,
             studentName: student.name,
             grade: student.grade,
+            timerSeconds: settings['timer_seconds'],
+            initialShields: settings['initial_shields'],
+            initialPasses: settings['initial_passes'],
           );
 
       // 4. Navigate to game
@@ -76,7 +81,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      child: FutureBuilder<TokenValidationResult>(
+      child: FutureBuilder<Map<String, dynamic>>(
         future: _validationFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -97,17 +102,20 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
           }
 
           final result = snapshot.data!;
+          final status = result['status'];
 
-          switch (result.status) {
-            case TokenStatus.notFound:
-              return _buildError(
-                'Invalid game link. This link does not exist or has been removed.',
-              );
-            case TokenStatus.used:
-              return _buildUsed();
-            case TokenStatus.valid:
-              return _buildIntro(result.student!);
+          if (status == 'not_found') {
+            return _buildError(
+              'Invalid game link. This link does not exist or has been removed.',
+            );
+          } else if (status == 'used') {
+            return _buildUsed();
+          } else if (status == 'active') {
+            final student = Student.fromJson(result['student']);
+            return _buildIntro(student);
           }
+          
+          return _buildError('Unknown error.');
         },
       ),
     );

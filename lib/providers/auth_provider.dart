@@ -1,11 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:spelling_bee/services/api_service.dart';
 
 class AppUser {
+  final String id;
+  final String role;
+  final String name;
   final String email;
-  AppUser(this.email);
+  final String? jwtToken;
+
+  AppUser({
+    required this.id,
+    required this.role,
+    required this.name,
+    required this.email,
+    this.jwtToken,
+  });
 }
 
-/// Provider tracking the current auth state (mocking the Firebase stream).
+/// Provider tracking the current auth state
 final authStateProvider = StateProvider<AsyncValue<AppUser?>>((ref) {
   return const AsyncValue.data(null);
 });
@@ -24,28 +36,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<AppUser?>> {
     state = const AsyncValue.loading();
     _ref.read(authStateProvider.notifier).state = const AsyncValue.loading();
 
-    // Artificial network delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await apiService.login(email, password);
+      final token = response['token'];
+      apiService.setToken(token);
 
-    final validLogins = {
-      'everest@gmail.com': 'admin@123',
-      'developer@gmail.com': 'dev@123',
-      'tester@gmail.com': 'test@123',
-    };
+      final userData = response['user'];
+      final user = AppUser(
+        id: userData['id']?.toString() ?? '',
+        role: userData['role'] ?? '',
+        name: userData['name'] ?? '',
+        email: userData['email'] ?? '',
+        jwtToken: token,
+      );
 
-    if (validLogins.containsKey(email) && validLogins[email] == password) {
-      final user = AppUser(email);
       state = AsyncValue.data(user);
       _ref.read(authStateProvider.notifier).state = AsyncValue.data(user);
-    } else {
-      final error = Exception('invalid-credential');
-      state = AsyncValue.error(error, StackTrace.current);
-      // Revert auth state back to unauthenticated on failure
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
       _ref.read(authStateProvider.notifier).state = const AsyncValue.data(null);
     }
   }
 
   Future<void> signOut() async {
+    apiService.clearToken();
     state = const AsyncValue.data(null);
     _ref.read(authStateProvider.notifier).state = const AsyncValue.data(null);
   }

@@ -44,7 +44,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       authState.when(
         data: (user) {
           if (user != null) {
-            context.go('/dashboard');
+            if (user.role == 'superadmin') {
+              context.go('/admin');
+            } else {
+              context.go('/dashboard');
+            }
           }
         },
         error: (error, _) {

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/providers/auth_provider.dart';
+import 'package:spelling_bee/screens/admin/super_admin_dashboard.dart';
 import 'package:spelling_bee/screens/examiner/login_screen.dart';
 import 'package:spelling_bee/screens/examiner/dashboard_screen.dart';
 import 'package:spelling_bee/screens/examiner/register_student_screen.dart';
@@ -10,10 +12,24 @@ import 'package:spelling_bee/screens/student/game_screen.dart';
 import 'package:spelling_bee/screens/student/result_screen.dart';
 import 'package:spelling_bee/screens/error_screen.dart';
 
+/// A ChangeNotifier that listens to the authStateProvider and notifies
+/// GoRouter when auth state changes so redirects are re-evaluated.
+class AuthChangeNotifier extends ChangeNotifier {
+  AuthChangeNotifier(this._ref) {
+    _ref.listen<AsyncValue<AppUser?>>(authStateProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+  final Ref _ref;
+}
+
 /// GoRouter provider with auth-aware routing.
 final routerProvider = Provider<GoRouter>((ref) {
+  final authNotifier = AuthChangeNotifier(ref);
+
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: authNotifier,
     redirect: (context, state) {
       // Base URL redirects to login
       if (state.uri.path == '/') return '/login';
@@ -30,7 +46,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoginRoute = state.uri.path == '/login';
 
       if (!isLoggedIn && !isLoginRoute) return '/login';
-      if (isLoggedIn && isLoginRoute) return '/dashboard';
+      if (isLoggedIn && isLoginRoute) {
+        final user = authState.value!;
+        return user.role == 'superadmin' ? '/admin' : '/dashboard';
+      }
+
+      // If a superadmin tries to access examiner dashboard, redirect them to admin
+      if (isLoggedIn && state.uri.path == '/dashboard') {
+        if (authState.value!.role == 'superadmin') return '/admin';
+      }
+
+      // Guard admin route — only superadmins
+      if (state.uri.path.startsWith('/admin')) {
+        if (!isLoggedIn) return '/login';
+        if (authState.value!.role != 'superadmin') return '/dashboard';
+      }
 
       return null;
     },
@@ -38,6 +68,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       message: 'Page not found: ${state.uri.path}',
     ),
     routes: [
+      // ── Super Admin Routes ───────────────────────────────────────
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const SuperAdminDashboard(),
+      ),
+
       // ── Examiner Routes ──────────────────────────────────────────
       GoRoute(
         path: '/login',
