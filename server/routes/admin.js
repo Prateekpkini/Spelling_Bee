@@ -68,6 +68,28 @@ router.get('/teachers', async (req, res) => {
 });
 
 /**
+ * DELETE /api/admin/teachers/:id
+ * Deletes an examiner by ID.
+ */
+router.delete('/teachers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // First check if the user is an examiner
+    const [existing] = await pool.execute("SELECT id FROM users WHERE id = ? AND role = 'examiner'", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ message: 'Teacher deleted successfully' });
+  } catch (err) {
+    console.error('Delete teacher error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/admin/settings
  * Returns current global game settings.
  */

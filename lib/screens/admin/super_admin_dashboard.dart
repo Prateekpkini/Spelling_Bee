@@ -299,6 +299,46 @@ class _ManageTeachersTabState extends State<_ManageTeachersTab> {
     }
   }
 
+  Future<void> _confirmDeleteTeacher(Examiner teacher) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF102B6E),
+        title: const Text('Delete Teacher', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to delete ${teacher.username}?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await apiService.deleteTeacher(int.parse(teacher.uid));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Teacher deleted successfully!'), backgroundColor: Colors.green),
+          );
+          _loadTeachers();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   InputDecoration _inputDeco(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -467,6 +507,11 @@ class _ManageTeachersTabState extends State<_ManageTeachersTab> {
                                             const TextStyle(color: Colors.white38, fontSize: 12)),
                                   ],
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                tooltip: 'Delete Teacher',
+                                onPressed: () => _confirmDeleteTeacher(t),
                               ),
                             ],
                           ),

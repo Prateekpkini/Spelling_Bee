@@ -88,4 +88,49 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/examiner/students
+ * Returns all students registered by the authenticated examiner.
+ */
+router.get('/students', authenticateToken, requireExaminer, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT * FROM students WHERE examiner_id = ? ORDER BY created_at DESC`,
+      [req.user.userId]
+    );
+    res.json({ students: rows });
+  } catch (err) {
+    console.error('Get students error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/examiner/students/:id/regenerate_token
+ * Regenerates the game token for a specific student.
+ */
+router.put('/students/:id/regenerate_token', authenticateToken, requireExaminer, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure student belongs to the examiner
+    const [existing] = await pool.execute('SELECT id FROM students WHERE id = ? AND examiner_id = ?', [id, req.user.userId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Student not found or access denied' });
+    }
+
+    const token = uuidv4().replace(/-/g, '');
+    
+    await pool.execute(
+      `UPDATE students SET token = ?, token_status = 'active' WHERE id = ?`,
+      [token, id]
+    );
+    
+    res.json({ message: 'Token regenerated successfully', token });
+  } catch (err) {
+    console.error('Regenerate token error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

@@ -91,7 +91,7 @@ class DashboardScreen extends ConsumerWidget {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final isDesktop = constraints.maxWidth > 600;
+                    final isDesktop = constraints.maxWidth > 800;
                     if (isDesktop) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +104,16 @@ class DashboardScreen extends ConsumerWidget {
                               onTap: () => context.go('/register'),
                             ),
                           ),
-                          const SizedBox(width: 20),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _ActionCard(
+                              icon: Icons.people_alt_rounded,
+                              title: 'My Students',
+                              subtitle: 'View your students and regenerate game links',
+                              onTap: () => context.go('/my_students'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: _ActionCard(
                               icon: Icons.leaderboard_rounded,
@@ -123,6 +132,13 @@ class DashboardScreen extends ConsumerWidget {
                           title: 'Register Student',
                           subtitle: 'Add a new student and generate their game link',
                           onTap: () => context.go('/register'),
+                        ),
+                        const SizedBox(height: 16),
+                        _ActionCard(
+                          icon: Icons.people_alt_rounded,
+                          title: 'My Students',
+                          subtitle: 'View your students and regenerate game links',
+                          onTap: () => context.go('/my_students'),
                         ),
                         const SizedBox(height: 16),
                         _ActionCard(

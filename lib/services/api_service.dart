@@ -85,6 +85,18 @@ class ApiService {
     }
   }
 
+  Future<void> deleteTeacher(int id) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/admin/teachers/$id'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body)['error'] ?? 'Failed to delete teacher';
+      throw Exception(error);
+    }
+  }
+
   Future<Map<String, dynamic>> getSettings() async {
     final response = await http.get(
       Uri.parse('$_baseUrl/admin/settings'),
@@ -188,6 +200,35 @@ class ApiService {
       return data.map((e) => Result.fromJson(e)).toList();
     } else {
       final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch leaderboard';
+      throw Exception(error);
+    }
+  }
+
+  Future<List<Student>> getMyStudents() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/examiner/students'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body)['students'];
+      return data.map((e) => Student.fromJson(e)).toList();
+    } else {
+      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch students';
+      throw Exception(error);
+    }
+  }
+
+  Future<String> regenerateToken(String studentId) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/examiner/students/$studentId/regenerate_token'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['token'];
+    } else {
+      final error = jsonDecode(response.body)['error'] ?? 'Failed to regenerate token';
       throw Exception(error);
     }
   }

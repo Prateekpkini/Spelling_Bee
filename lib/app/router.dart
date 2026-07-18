@@ -6,6 +6,7 @@ import 'package:spelling_bee/screens/admin/super_admin_dashboard.dart';
 import 'package:spelling_bee/screens/examiner/login_screen.dart';
 import 'package:spelling_bee/screens/examiner/dashboard_screen.dart';
 import 'package:spelling_bee/screens/examiner/register_student_screen.dart';
+import 'package:spelling_bee/screens/examiner/my_students_screen.dart';
 import 'package:spelling_bee/screens/examiner/leaderboard_screen.dart';
 import 'package:spelling_bee/screens/student/token_screen.dart';
 import 'package:spelling_bee/screens/student/game_screen.dart';
@@ -52,7 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // If a superadmin tries to access examiner dashboard, redirect them to admin
-      if (isLoggedIn && state.uri.path == '/dashboard') {
+      if (isLoggedIn && (state.uri.path == '/dashboard' || state.uri.path == '/my_students')) {
         if (authState.value!.role == 'superadmin') return '/admin';
       }
 
@@ -86,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterStudentScreen(),
+      ),
+      GoRoute(
+        path: '/my_students',
+        builder: (context, state) => const MyStudentsScreen(),
       ),
       GoRoute(
         path: '/leaderboard',
