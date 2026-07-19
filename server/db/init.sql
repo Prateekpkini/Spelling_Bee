@@ -94,6 +94,6 @@ VALUES (
   'Super Admin',
   NULL,
   'superadmin@gmail.com',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+  '$2a$10$FHH2TfkNfQFECZ4KVImUNO5AU1g0dsz29wGHfzAMbqd6PywxZ9swu'
 )
 ON DUPLICATE KEY UPDATE email = email;
