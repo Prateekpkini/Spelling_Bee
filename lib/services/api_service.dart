@@ -10,11 +10,18 @@ import 'package:spelling_bee/models/word.dart';
 class ApiService {
   static String get _baseUrl {
     if (kIsWeb) {
-      final host = html.window.location.hostname ?? 'localhost';
-      return 'http://$host:3000/api';
+      return 'https://spelling-bee-pq86.onrender.com/api';
     }
-    return 'http://10.86.6.243:3000/api';
+    return 'https://spelling-bee-pq86.onrender.com/api';
   }
+
+  // static String get _baseUrl {
+  //   if (kIsWeb) {
+  //     final host = html.window.location.hostname ?? 'localhost';
+  //     return 'http://$host:3000/api';
+  //   }
+  //   return 'http://10.86.6.243:3000/api';
+  // }
 
   String? _jwtToken;
 
@@ -52,7 +59,12 @@ class ApiService {
 
   // --- Admin ---
 
-  Future<void> createTeacher(String name, String? school, String email, String password) async {
+  Future<void> createTeacher(
+    String name,
+    String? school,
+    String email,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/admin/teachers'),
       headers: _headers,
@@ -65,7 +77,8 @@ class ApiService {
     );
 
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to create teacher';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to create teacher';
       throw Exception(error);
     }
   }
@@ -80,7 +93,8 @@ class ApiService {
       final List<dynamic> data = jsonDecode(response.body)['teachers'];
       return data.map((e) => Examiner.fromJson(e)).toList();
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch teachers';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch teachers';
       throw Exception(error);
     }
   }
@@ -92,7 +106,8 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to delete teacher';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to delete teacher';
       throw Exception(error);
     }
   }
@@ -106,12 +121,18 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body)['settings'];
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch settings';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch settings';
       throw Exception(error);
     }
   }
 
-  Future<void> updateSettings(int timerSeconds, int initialShields, int initialPasses, String eventName) async {
+  Future<void> updateSettings(
+    int timerSeconds,
+    int initialShields,
+    int initialPasses,
+    String eventName,
+  ) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/admin/settings'),
       headers: _headers,
@@ -124,7 +145,8 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to update settings';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to update settings';
       throw Exception(error);
     }
   }
@@ -138,23 +160,29 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch config';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch config';
       throw Exception(error);
     }
   }
 
-  Future<Map<String, dynamic>> uploadWords(String grade, List<int> fileBytes, String fileName) async {
-    var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/admin/words/upload'));
+  Future<Map<String, dynamic>> uploadWords(
+    String grade,
+    List<int> fileBytes,
+    String fileName,
+  ) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/admin/words/upload'),
+    );
     request.headers.addAll({
       if (_jwtToken != null) 'Authorization': 'Bearer $_jwtToken',
     });
-    
+
     request.fields['grade'] = grade;
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      fileBytes,
-      filename: fileName,
-    ));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+    );
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
@@ -162,7 +190,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to upload words';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to upload words';
       throw Exception(error);
     }
   }
@@ -199,7 +228,8 @@ class ApiService {
     if (response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to register student';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to register student';
       throw Exception(error);
     }
   }
@@ -214,7 +244,8 @@ class ApiService {
       final List<dynamic> data = jsonDecode(response.body)['results'];
       return data.map((e) => Result.fromJson(e)).toList();
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch leaderboard';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch leaderboard';
       throw Exception(error);
     }
   }
@@ -229,7 +260,8 @@ class ApiService {
       final List<dynamic> data = jsonDecode(response.body)['students'];
       return data.map((e) => Student.fromJson(e)).toList();
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to fetch students';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch students';
       throw Exception(error);
     }
   }
@@ -243,7 +275,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body)['token'];
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to regenerate token';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to regenerate token';
       throw Exception(error);
     }
   }
@@ -259,7 +292,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to validate token';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to validate token';
       throw Exception(error);
     }
   }
@@ -273,7 +307,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to start game';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to start game';
       throw Exception(error);
     }
   }
@@ -283,7 +318,8 @@ class ApiService {
       Uri.parse('$_baseUrl/game/submit'),
       headers: _headers,
       body: jsonEncode({
-        'student_id': result.studentId, // Note: result might not have studentId if we didn't store it, we might need to adjust
+        'student_id': result
+            .studentId, // Note: result might not have studentId if we didn't store it, we might need to adjust
         'student_name': result.studentName,
         'grade': result.grade,
         'final_score': result.finalScore,
@@ -296,7 +332,8 @@ class ApiService {
     );
 
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to submit result';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to submit result';
       throw Exception(error);
     }
   }
