@@ -25,6 +25,7 @@ class AuthChangeNotifier extends ChangeNotifier {
 }
 
 /// GoRouter provider with auth-aware routing.
+/// GoRouter provider with auth-aware routing.
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = AuthChangeNotifier(ref);
 
@@ -32,35 +33,49 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/login',
     refreshListenable: authNotifier,
     redirect: (context, state) {
-      // Base URL redirects to login
-      if (state.uri.path == '/') return '/login';
+      final path = state.uri.path;
 
-      // Check if this is a student-facing route (starts with /play)
-      final isPlayerRoute = state.uri.path.startsWith('/play');
+      // 1. Catch root URL visits. If they arrive with a token, forcefully route them to the game.
+      if (path == '/') {
+        if (state.uri.queryParameters.containsKey('token')) {
+          final token = state.uri.queryParameters['token'];
+          return '/play?token=$token';
+        }
+        return '/login';
+      }
 
-      // Student routes don't require auth
-      if (isPlayerRoute) return null;
+      // 2. Allow ALL student-facing routes to bypass authentication completely
+      if (path.startsWith('/play') || path.startsWith('/token') || path.startsWith('/game')) {
+        return null; 
+      }
 
-      // For examiner routes, check auth dynamically
+      // 3. Handle Authentication for Examiners and Admins
       final authState = ref.read(authStateProvider);
       final isLoggedIn = authState.valueOrNull != null;
-      final isLoginRoute = state.uri.path == '/login';
+      final isLoginRoute = path == '/login';
 
-      if (!isLoggedIn && !isLoginRoute) return '/login';
+      if (!isLoggedIn && !isLoginRoute) {
+        return '/login';
+      }
+
       if (isLoggedIn && isLoginRoute) {
         final user = authState.value!;
         return user.role == 'superadmin' ? '/admin' : '/dashboard';
       }
 
-      // If a superadmin tries to access examiner dashboard, redirect them to admin
-      if (isLoggedIn && (state.uri.path == '/dashboard' || state.uri.path == '/my_students')) {
-        if (authState.value!.role == 'superadmin') return '/admin';
-      }
-
-      // Guard admin route — only superadmins
-      if (state.uri.path.startsWith('/admin')) {
-        if (!isLoggedIn) return '/login';
-        if (authState.value!.role != 'superadmin') return '/dashboard';
+      // 4. Role-based Guarding
+      if (isLoggedIn) {
+        final role = authState.value!.role;
+        
+        // Prevent superadmins from accessing examiner pages
+        if ((path == '/dashboard' || path == '/my_students') && role == 'superadmin') {
+          return '/admin';
+        }
+        
+        // Prevent examiners from accessing superadmin pages
+        if (path.startsWith('/admin') && role != 'superadmin') {
+          return '/dashboard';
+        }
       }
 
       return null;
