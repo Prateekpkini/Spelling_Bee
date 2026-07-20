@@ -666,7 +666,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // On-Screen Keyboard – Mobile Only (A-Z + Backspace + NEXT)
+  // On-Screen Keyboard – Samsung-style, theme-matched (A-Z + ⌫ + NEXT)
   // ═══════════════════════════════════════════════════════════════════
   Widget _buildOnScreenKeyboard(GameState state, ThemeState theme) {
     final isPlaying = state.status == GameStatus.playing;
@@ -674,30 +674,76 @@ class _GameScreenState extends ConsumerState<GameScreen>
     const row2 = ['A','S','D','F','G','H','J','K','L'];
     const row3 = ['Z','X','C','V','B','N','M'];
 
-    Widget buildKey(String label, {double flex = 1, VoidCallback? onTap, Color? bg, Color? fg}) {
+    // Shared key inserter
+    void insertChar(String ch) {
+      final text = _answerController.text;
+      final sel = _answerController.selection;
+      final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
+      final newText = text.substring(0, pos) + ch + text.substring(pos);
+      _answerController.text = newText;
+      _answerController.selection = TextSelection.collapsed(offset: pos + 1);
+    }
+
+    void deleteChar() {
+      final text = _answerController.text;
+      final sel = _answerController.selection;
+      final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
+      if (pos > 0) {
+        final newText = text.substring(0, pos - 1) + text.substring(pos);
+        _answerController.text = newText;
+        _answerController.selection = TextSelection.collapsed(offset: pos - 1);
+      }
+    }
+
+    // ── Individual key widget ──
+    Widget buildKey(
+      String label, {
+      double widthFactor = 1.0,
+      VoidCallback? onTap,
+      Color? background,
+      Color? textColor,
+      double fontSize = 18,
+      FontWeight fontWeight = FontWeight.w500,
+      Widget? icon,
+    }) {
+      final keyBg = background ?? theme.backgroundColors[0].withOpacity(0.7);
+      final keyFg = textColor ?? _GC.textBright;
+      final borderCol = theme.glassBorder.withOpacity(0.4);
+
       return Expanded(
-        flex: (flex * 10).toInt(),
+        flex: (widthFactor * 10).toInt(),
         child: Padding(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 3),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: isPlaying ? onTap : null,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                height: 42,
+              borderRadius: BorderRadius.circular(10),
+              splashColor: theme.accentColor.withOpacity(0.25),
+              highlightColor: theme.accentColor.withOpacity(0.10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 80),
+                height: 48,
                 decoration: BoxDecoration(
-                  color: bg ?? theme.glassFill,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.glassBorder, width: 0.5),
+                  color: keyBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderCol, width: 0.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.35),
+                      offset: const Offset(0, 2),
+                      blurRadius: 3,
+                    ),
+                  ],
                 ),
                 alignment: Alignment.center,
-                child: Text(
+                child: icon ?? Text(
                   label,
                   style: TextStyle(
-                    color: fg ?? _GC.textBright,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    color: isPlaying ? keyFg : _GC.textDim,
+                    fontSize: fontSize,
+                    fontWeight: fontWeight,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -707,67 +753,88 @@ class _GameScreenState extends ConsumerState<GameScreen>
       );
     }
 
-    Widget buildRow(List<String> keys) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: keys.map((k) => buildKey(
-          k,
-          onTap: () {
-            final text = _answerController.text;
-            final sel = _answerController.selection;
-            final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
-            final newText = text.substring(0, pos) + k + text.substring(pos);
-            _answerController.text = newText;
-            _answerController.selection = TextSelection.collapsed(offset: pos + 1);
-          },
-        )).toList(),
+    // ── Letter row ──
+    Widget buildLetterRow(List<String> keys, {EdgeInsetsGeometry padding = EdgeInsets.zero}) {
+      return Padding(
+        padding: padding,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: keys.map((k) => buildKey(
+            k,
+            onTap: () => insertChar(k),
+          )).toList(),
+        ),
       );
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      padding: const EdgeInsets.fromLTRB(3, 6, 3, 10),
       decoration: BoxDecoration(
-        color: theme.glassFill.withOpacity(0.95),
-        border: Border(top: BorderSide(color: theme.glassBorder, width: 0.5)),
+        // Match quiz background gradient subtly
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            theme.backgroundColors[1].withOpacity(0.95),
+            theme.backgroundColors[2].withOpacity(0.98),
+          ],
+        ),
+        border: Border(
+          top: BorderSide(color: theme.glassBorder.withOpacity(0.3), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            offset: const Offset(0, -2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          buildRow(row1),
-          buildRow(row2),
-          Row(
-            children: [
-              // Backspace key
-              buildKey('⌫', flex: 1.5, onTap: () {
-                final text = _answerController.text;
-                final sel = _answerController.selection;
-                final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
-                if (pos > 0) {
-                  final newText = text.substring(0, pos - 1) + text.substring(pos);
-                  _answerController.text = newText;
-                  _answerController.selection = TextSelection.collapsed(offset: pos - 1);
-                }
-              }),
-              ...row3.map((k) => buildKey(
-                k,
-                onTap: () {
-                  final text = _answerController.text;
-                  final sel = _answerController.selection;
-                  final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
-                  final newText = text.substring(0, pos) + k + text.substring(pos);
-                  _answerController.text = newText;
-                  _answerController.selection = TextSelection.collapsed(offset: pos + 1);
-                },
-              )),
-              // NEXT / Submit key
-              buildKey(
-                'NEXT',
-                flex: 1.5,
-                bg: _GC.correct.withOpacity(0.3),
-                fg: _GC.correct,
-                onTap: _submitAnswer,
-              ),
-            ],
+          // Row 1: Q W E R T Y U I O P
+          buildLetterRow(row1),
+
+          // Row 2: A S D F G H J K L (Samsung-style center padding)
+          buildLetterRow(row2, padding: const EdgeInsets.symmetric(horizontal: 14)),
+
+          // Row 3: ⌫ + Z X C V B N M + NEXT
+          Padding(
+            padding: const EdgeInsets.only(top: 0),
+            child: Row(
+              children: [
+                // ⌫ Backspace – darker background with icon
+                buildKey(
+                  '⌫',
+                  widthFactor: 1.5,
+                  background: theme.backgroundColors[0].withOpacity(0.9),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w400,
+                  onTap: deleteChar,
+                  icon: Icon(
+                    Icons.backspace_outlined,
+                    color: isPlaying ? _GC.textBright : _GC.textDim,
+                    size: 22,
+                  ),
+                ),
+                // Letter keys
+                ...row3.map((k) => buildKey(
+                  k,
+                  onTap: () => insertChar(k),
+                )),
+                // NEXT – glowing green accent
+                buildKey(
+                  'NEXT',
+                  widthFactor: 1.5,
+                  background: _GC.correct.withOpacity(0.2),
+                  textColor: _GC.correct,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  onTap: _submitAnswer,
+                ),
+              ],
+            ),
           ),
         ],
       ),
