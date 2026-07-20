@@ -14,7 +14,8 @@ class RegisterStudentScreen extends ConsumerStatefulWidget {
   const RegisterStudentScreen({super.key});
 
   @override
-  ConsumerState<RegisterStudentScreen> createState() => _RegisterStudentScreenState();
+  ConsumerState<RegisterStudentScreen> createState() =>
+      _RegisterStudentScreenState();
 }
 
 class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
@@ -65,15 +66,13 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
 
       final token = await ref.read(registerStudentProvider(payload).future);
 
-
-
       String baseUrl;
       if (kIsWeb) {
         baseUrl = html.window.location.origin;
       } else {
         baseUrl = 'https://everest-spelling-bee-26.web.app';
       }
-      final link = '$baseUrl/#/play?token=$token';
+      final link = '$baseUrl/play?token=$token';
 
       setState(() {
         _generatedLink = link;
@@ -84,7 +83,10 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e', style: const TextStyle(color: Colors.white)),
+            content: Text(
+              'Error: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -97,7 +99,10 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
     Clipboard.setData(ClipboardData(text: _generatedLink!));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Game link copied to clipboard!', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Game link copied to clipboard!',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -153,7 +158,10 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/dashboard'),
         ),
-        title: const Text('Register Student', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Register Student',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Center(
         child: Container(
@@ -162,7 +170,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 800;
-              final content = _generatedLink != null ? _buildSuccessView() : _buildForm();
+              final content = _generatedLink != null
+                  ? _buildSuccessView()
+                  : _buildForm();
               final stats = _buildQuickStats();
 
               if (isDesktop) {
@@ -179,11 +189,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               }
               return SingleChildScrollView(
                 child: Column(
-                  children: [
-                    content,
-                    const SizedBox(height: 24),
-                    stats,
-                  ],
+                  children: [content, const SizedBox(height: 24), stats],
                 ),
               );
             },
@@ -206,9 +212,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               Text(
                 'Information',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -238,7 +244,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
             padding: EdgeInsets.only(top: 4, right: 8),
             child: Icon(Icons.circle, size: 8, color: Color(0xFFFFD700)),
           ),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white70))),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: Colors.white70)),
+          ),
         ],
       ),
     );
@@ -257,22 +265,26 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.green, width: 2),
             ),
-            child: const Icon(Icons.check_circle, color: Colors.green, size: 40),
+            child: const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 40,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
             'Student Registered!',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             '${_nameCtrl.text.trim()} (Grade $_selectedGrade)',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 32),
 
@@ -300,7 +312,10 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                 const SizedBox(height: 8),
                 SelectableText(
                   _generatedLink!,
-                  style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                  ),
                 ),
               ],
             ),
@@ -314,12 +329,17 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _copyLink,
                   icon: const Icon(Icons.copy),
-                  label: const Text('Copy Link', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Copy Link',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFD700),
                     foregroundColor: const Color(0xFF0A1128),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -327,7 +347,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    context.go('/play?token=${_generatedLink!.split('token=').last}');
+                    context.go(
+                      '/play?token=${_generatedLink!.split('token=').last}',
+                    );
                   },
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Test In-App'),
@@ -335,7 +357,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -370,9 +394,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
             Text(
               'Student Details',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -380,7 +404,8 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: _glassInput('Full Name *', Icons.person_outline),
               textCapitalization: TextCapitalization.words,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
             ),
             const SizedBox(height: 16),
             Row(
@@ -392,7 +417,15 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: _glassInput('Grade *', Icons.grade_outlined),
                     items: List.generate(10, (i) => '${i + 1}')
-                        .map((g) => DropdownMenuItem(value: g, child: Text('Grade $g', style: const TextStyle(color: Colors.white))))
+                        .map(
+                          (g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(
+                              'Grade $g',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _selectedGrade = v ?? '1'),
                   ),
@@ -412,15 +445,23 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
             TextFormField(
               controller: _schoolNameCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: _glassInput('School Name *', Icons.apartment_outlined),
+              decoration: _glassInput(
+                'School Name *',
+                Icons.apartment_outlined,
+              ),
               textCapitalization: TextCapitalization.words,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'School name is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'School name is required'
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _schoolAddressCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: _glassInput('School Address', Icons.location_on_outlined),
+              decoration: _glassInput(
+                'School Address',
+                Icons.location_on_outlined,
+              ),
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
@@ -432,7 +473,8 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: _glassInput('City *'),
                     textCapitalization: TextCapitalization.words,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -452,7 +494,8 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: _glassInput('State *', Icons.map_outlined),
               textCapitalization: TextCapitalization.words,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'State is required' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'State is required' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -463,7 +506,8 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Mobile is required';
-                if (v.trim().length < 10) return 'Enter a valid 10-digit number';
+                if (v.trim().length < 10)
+                  return 'Enter a valid 10-digit number';
                 return null;
               },
             ),
@@ -476,7 +520,9 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFFD700), // Gold
                   foregroundColor: const Color(0xFF0A1128),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 8,
                   shadowColor: const Color(0xFFFFD700).withOpacity(0.4),
                 ),
@@ -484,11 +530,17 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
                     ? const SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF0A1128),
+                        ),
                       )
                     : const Text(
                         'Register & Generate Link',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ),

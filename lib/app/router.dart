@@ -45,8 +45,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // 2. Allow ALL student-facing routes to bypass authentication completely
-      if (path.startsWith('/play') || path.startsWith('/token') || path.startsWith('/game')) {
-        return null; 
+      if (path.startsWith('/play') ||
+          path.startsWith('/token') ||
+          path.startsWith('/game')) {
+        return null;
       }
 
       // 3. Handle Authentication for Examiners and Admins
@@ -66,12 +68,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 4. Role-based Guarding
       if (isLoggedIn) {
         final role = authState.value!.role;
-        
+
         // Prevent superadmins from accessing examiner pages
-        if ((path == '/dashboard' || path == '/my_students') && role == 'superadmin') {
+        if ((path == '/dashboard' || path == '/my_students') &&
+            role == 'superadmin') {
           return '/admin';
         }
-        
+
         // Prevent examiners from accessing superadmin pages
         if (path.startsWith('/admin') && role != 'superadmin') {
           return '/dashboard';
@@ -80,9 +83,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       return null;
     },
-    errorBuilder: (context, state) => ErrorScreen(
-      message: 'Page not found: ${state.uri.path}',
-    ),
+    errorBuilder: (context, state) =>
+        ErrorScreen(message: 'Page not found: ${state.uri.path}'),
     routes: [
       // ── Super Admin Routes ───────────────────────────────────────
       GoRoute(
@@ -91,10 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Examiner Routes ──────────────────────────────────────────
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const DashboardScreen(),
@@ -119,7 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           final token = state.uri.queryParameters['token'];
           if (token == null || token.isEmpty) {
             return const ErrorScreen(
-              message: 'No game token provided. Please use the link sent by your examiner.',
+              message:
+                  'No game token provided. Please use the link sent by your examiner.',
             );
           }
           return TokenScreen(token: token);

@@ -50,7 +50,10 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF102B6E),
-        title: const Text('Regenerate Link', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Regenerate Link',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           'Are you sure you want to regenerate the game link for ${student.name}? The old link will stop working.',
           style: const TextStyle(color: Colors.white70),
@@ -58,7 +61,10 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -75,17 +81,72 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
     if (confirm == true) {
       try {
         final newToken = await apiService.regenerateToken(student.id);
-        
+
         String baseUrl;
         if (kIsWeb) {
           baseUrl = html.window.location.origin;
         } else {
           baseUrl = 'https://everest-spelling-bee-26.web.app';
         }
-        final newLink = '$baseUrl/#/play?token=$newToken';
+        final newLink = '$baseUrl/play?token=$newToken';
 
         if (mounted) {
           _showLinkDialog(newLink);
+          _loadStudents();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  void _deleteStudent(Student student) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF102B6E),
+        title: const Text(
+          'Delete Student',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete ${student.name}? This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await apiService.deleteStudent(student.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Student deleted successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
           _loadStudents();
         }
       } catch (e) {
@@ -103,7 +164,10 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF102B6E),
-        title: const Text('New Game Link', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'New Game Link',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,7 +186,10 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
               ),
               child: SelectableText(
                 link,
-                style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'monospace',
+                ),
               ),
             ),
           ],
@@ -136,7 +203,10 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: link));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Link copied to clipboard!'), backgroundColor: Colors.green),
+                const SnackBar(
+                  content: Text('Link copied to clipboard!'),
+                  backgroundColor: Colors.green,
+                ),
               );
               Navigator.of(context).pop();
             },
@@ -163,112 +233,241 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/dashboard'),
         ),
-        title: const Text('My Students', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'My Students',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 800),
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Registered Students',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
-                'View all students you have registered and regenerate their game links if needed.',
+                'View all students you have registered. Regenerate game links or remove students as needed.',
                 style: TextStyle(color: Colors.white70),
               ),
               const SizedBox(height: 24),
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFFFD700),
+                        ),
+                      )
                     : _students.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.people_outline, color: Colors.white24, size: 64),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'You haven\'t registered any students yet.',
-                                  style: TextStyle(color: Colors.white54, fontSize: 16),
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton.icon(
-                                  onPressed: () => context.go('/register'),
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Register Student'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFD700),
-                                    foregroundColor: const Color(0xFF0A1128),
-                                  ),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.people_outline,
+                              color: Colors.white24,
+                              size: 64,
                             ),
-                          )
-                        : ListView.separated(
+                            const SizedBox(height: 16),
+                            const Text(
+                              'You haven\'t registered any students yet.',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () => context.go('/register'),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Register Student'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFD700),
+                                foregroundColor: const Color(0xFF0A1128),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isMobile = constraints.maxWidth < 500;
+                          return ListView.separated(
                             itemCount: _students.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final student = _students[index];
                               return GlassContainer(
                                 padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
-                                      child: Text(
-                                        student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
-                                        style: const TextStyle(
-                                            color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            student.name,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Grade: ${student.grade}  •  Status: ${student.tokenStatus}',
-                                            style: const TextStyle(color: Colors.white54, fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    OutlinedButton.icon(
-                                      onPressed: () => _regenerateLink(student),
-                                      icon: const Icon(Icons.refresh, size: 16),
-                                      label: const Text('Regenerate Link'),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        side: const BorderSide(color: Colors.white30),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                child: isMobile
+                                    ? _buildMobileCard(student)
+                                    : _buildDesktopCard(student),
                               );
                             },
-                          ),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // ── Desktop card: single row ───────────────────────────
+  Widget _buildDesktopCard(Student student) {
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
+          child: Text(
+            student.name.isNotEmpty
+                ? student.name[0].toUpperCase()
+                : '?',
+            style: const TextStyle(
+              color: Color(0xFFFFD700),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                student.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Grade: ${student.grade}  •  Status: ${student.tokenStatus}',
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _regenerateLink(student),
+          icon: const Icon(Icons.refresh, size: 16),
+          label: const Text('Regenerate Link'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white30),
+          ),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: () => _deleteStudent(student),
+          icon: const Icon(Icons.delete_outline, size: 16),
+          label: const Text('Delete'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.redAccent,
+            side: const BorderSide(color: Colors.redAccent),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Mobile card: stacked layout ────────────────────────
+  Widget _buildMobileCard(Student student) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Student info row
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
+              child: Text(
+                student.name.isNotEmpty
+                    ? student.name[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    student.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Grade: ${student.grade}  •  ${student.tokenStatus}',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Action buttons row
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _regenerateLink(student),
+                icon: const Icon(Icons.refresh, size: 14),
+                label: const Text('Regenerate', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white30),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _deleteStudent(student),
+                icon: const Icon(Icons.delete_outline, size: 14),
+                label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

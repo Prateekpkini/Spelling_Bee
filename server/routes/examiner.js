@@ -133,4 +133,31 @@ router.put('/students/:id/regenerate_token', authenticateToken, requireExaminer,
   }
 });
 
+/**
+ * DELETE /api/examiner/students/:id
+ * Deletes a student registered by the authenticated examiner.
+ * Associated results will have student_id set to NULL (ON DELETE SET NULL).
+ */
+router.delete('/students/:id', authenticateToken, requireExaminer, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Ensure student belongs to the examiner
+    const [existing] = await pool.execute(
+      'SELECT id FROM students WHERE id = ? AND examiner_id = ?',
+      [id, req.user.userId]
+    );
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Student not found or access denied' });
+    }
+
+    await pool.execute('DELETE FROM students WHERE id = ?', [id]);
+
+    res.json({ message: 'Student deleted successfully' });
+  } catch (err) {
+    console.error('Delete student error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

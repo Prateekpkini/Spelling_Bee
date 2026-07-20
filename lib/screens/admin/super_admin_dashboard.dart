@@ -62,96 +62,159 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Sidebar
-                      SizedBox(
-                        width: 240,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(_navItems.length, (index) {
-                              final item = _navItems[index];
-                              final isSelected = _selectedIndex == index;
-                              return InkWell(
-                                onTap: () => setState(() => _selectedIndex = index),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFFFFD700).withOpacity(0.15)
-                                        : Colors.transparent,
-                                    border: Border(
-                                      left: BorderSide(
-                                        color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
-                                        width: 4,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        item.icon,
-                                        color: isSelected ? const Color(0xFFFFD700) : Colors.white54,
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Text(
-                                          item.label,
-                                          style: TextStyle(
-                                            color: isSelected ? Colors.white : Colors.white54,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Content
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
-                          ),
-                          padding: const EdgeInsets.all(24),
-                          child: _buildContent(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 700;
+              if (isMobile) {
+                return _buildMobileLayout();
+              }
+              return _buildDesktopLayout();
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  // ── Desktop Layout (sidebar + content) ──────────────────
+  Widget _buildDesktopLayout() {
+    return Column(
+      children: [
+        _buildDesktopHeader(),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Sidebar
+                SizedBox(
+                  width: 240,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_navItems.length, (index) {
+                        final item = _navItems[index];
+                        final isSelected = _selectedIndex == index;
+                        return InkWell(
+                          onTap: () => setState(() => _selectedIndex = index),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFFFD700).withOpacity(0.15)
+                                  : Colors.transparent,
+                              border: Border(
+                                left: BorderSide(
+                                  color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
+                                  width: 4,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  item.icon,
+                                  color: isSelected ? const Color(0xFFFFD700) : Colors.white54,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    item.label,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white54,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: _buildContent(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Mobile Layout (bottom nav + full-width content) ──────
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildMobileHeader(),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: _buildContent(),
+            ),
+          ),
+        ),
+        // Bottom Navigation
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A1128).withOpacity(0.95),
+            border: Border(
+              top: BorderSide(color: Colors.white.withOpacity(0.12), width: 1),
+            ),
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: (i) => setState(() => _selectedIndex = i),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedItemColor: const Color(0xFFFFD700),
+            unselectedItemColor: Colors.white38,
+            selectedFontSize: 11,
+            unselectedFontSize: 10,
+            items: _navItems
+                .map((item) => BottomNavigationBarItem(
+                      icon: Icon(item.icon, size: 22),
+                      label: item.label.split(' ').last, // short label
+                    ))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Desktop Header ──────────────────────────────────────
+  Widget _buildDesktopHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -207,6 +270,63 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Mobile Header (compact) ─────────────────────────────
+  Widget _buildMobileHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: AssetImage('assets/images/logo.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _eventName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Text(
+                  'SUPER ADMIN CONSOLE',
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent, size: 22),
+            tooltip: 'Sign Out',
+            onPressed: () {
+              ref.read(authNotifierProvider.notifier).signOut();
+              context.go('/login');
+            },
           ),
         ],
       ),
@@ -390,162 +510,231 @@ class _ManageTeachersTabState extends State<_ManageTeachersTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 500;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.people, color: Color(0xFFFFD700), size: 28),
-            const SizedBox(width: 12),
-            Text('Manage Teachers',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text('Create examiner accounts for teachers.',
-            style: TextStyle(color: Colors.white54, fontSize: 13)),
-        const Divider(color: Colors.white12, height: 32),
+            // Title
+            Row(
+              children: [
+                const Icon(Icons.people, color: Color(0xFFFFD700), size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Manage Teachers',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Create examiner accounts for teachers.',
+                style: TextStyle(color: Colors.white54, fontSize: 13)),
+            const Divider(color: Colors.white12, height: 32),
 
-        // Form
-        Form(
-          key: _formKey,
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              SizedBox(
-                width: 220,
-                child: TextFormField(
-                  controller: _nameCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: _inputDeco('Full Name', Icons.person),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: TextFormField(
-                  controller: _schoolCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: _inputDeco('School', Icons.school),
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: TextFormField(
-                  controller: _emailCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: _inputDeco('Email', Icons.email),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: TextFormField(
-                  controller: _passwordCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: _inputDeco('Password', Icons.lock),
-                  obscureText: true,
-                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-                ),
-              ),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _createTeacher,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)))
-                      : const Icon(Icons.add, size: 20),
-                  label: const Text('Create Teacher'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD700),
-                    foregroundColor: const Color(0xFF0A1128),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-        Text('Registered Teachers',
-            style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 14)),
-        const SizedBox(height: 12),
-
-        // Teachers list
-        Expanded(
-          child: _loadingTeachers
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
-              : _teachers.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.person_off, color: Colors.white24, size: 48),
-                          const SizedBox(height: 12),
-                          Text('No teachers registered yet.',
-                              style: TextStyle(color: Colors.white38)),
-                        ],
+            // Form — responsive layout
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (isMobile) ...[
+                    // Stack fields vertically on mobile
+                    TextFormField(
+                      controller: _nameCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _inputDeco('Full Name', Icons.person),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _schoolCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _inputDeco('School', Icons.school),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _emailCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _inputDeco('Email', Icons.email),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _passwordCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _inputDeco('Password', Icons.lock),
+                      obscureText: true,
+                      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _createTeacher,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)))
+                            : const Icon(Icons.add, size: 20),
+                        label: const Text('Create Teacher'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: const Color(0xFF0A1128),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
-                    )
-                  : ListView.separated(
-                      itemCount: _teachers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final t = _teachers[index];
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                  ] else ...[
+                    // Wrap layout for desktop
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        SizedBox(
+                          width: 220,
+                          child: TextFormField(
+                            controller: _nameCtrl,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: _inputDeco('Full Name', Icons.person),
+                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                           ),
-                          child: Row(
+                        ),
+                        SizedBox(
+                          width: 220,
+                          child: TextFormField(
+                            controller: _schoolCtrl,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: _inputDeco('School', Icons.school),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 220,
+                          child: TextFormField(
+                            controller: _emailCtrl,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: _inputDeco('Email', Icons.email),
+                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 220,
+                          child: TextFormField(
+                            controller: _passwordCtrl,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: _inputDeco('Password', Icons.lock),
+                            obscureText: true,
+                            validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _createTeacher,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)))
+                                : const Icon(Icons.add, size: 20),
+                            label: const Text('Create Teacher'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD700),
+                              foregroundColor: const Color(0xFF0A1128),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            Text('Registered Teachers',
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 12),
+
+            // Teachers list
+            Expanded(
+              child: _loadingTeachers
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
+                  : _teachers.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              CircleAvatar(
-                                backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
-                                child: Text(
-                                  t.username.isNotEmpty ? t.username[0].toUpperCase() : '?',
-                                  style: const TextStyle(
-                                      color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(t.username,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontWeight: FontWeight.w600)),
-                                    const SizedBox(height: 2),
-                                    Text('${t.email}  •  ${t.school ?? 'No School'}',
-                                        style:
-                                            const TextStyle(color: Colors.white38, fontSize: 12)),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                tooltip: 'Delete Teacher',
-                                onPressed: () => _confirmDeleteTeacher(t),
-                              ),
+                              Icon(Icons.person_off, color: Colors.white24, size: 48),
+                              const SizedBox(height: 12),
+                              Text('No teachers registered yet.',
+                                  style: TextStyle(color: Colors.white38)),
                             ],
                           ),
-                        );
-                      },
-                    ),
-        ),
-      ],
+                        )
+                      : ListView.separated(
+                          itemCount: _teachers.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final t = _teachers[index];
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
+                                    child: Text(
+                                      t.username.isNotEmpty ? t.username[0].toUpperCase() : '?',
+                                      style: const TextStyle(
+                                          color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(t.username,
+                                            style: const TextStyle(
+                                                color: Colors.white, fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          isMobile
+                                              ? t.email
+                                              : '${t.email}  •  ${t.school ?? 'No School'}',
+                                          style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    tooltip: 'Delete Teacher',
+                                    onPressed: () => _confirmDeleteTeacher(t),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -659,81 +848,88 @@ class _GameSettingsTabState extends State<_GameSettingsTab> {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)));
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxFormWidth = constraints.maxWidth < 500 ? constraints.maxWidth : 450.0;
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.settings, color: Color(0xFFFFD700), size: 28),
-              const SizedBox(width: 12),
-              Text('Game Settings',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  const Icon(Icons.settings, color: Color(0xFFFFD700), size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Game Settings',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('Configure championship timer, shields, and passes.',
+                  style: TextStyle(color: Colors.white54, fontSize: 13)),
+              const Divider(color: Colors.white12, height: 32),
+
+              SizedBox(
+                width: maxFormWidth,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _eventNameCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _settingsDeco('Event Name', Icons.event, 'e.g. Everest Spelling Bee'),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _timerCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _settingsDeco('Timer (Seconds)', Icons.timer, 'e.g. 1800 = 30 minutes'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _shieldsCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _settingsDeco('Initial Shields', Icons.shield, 'e.g. 5'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _passesCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _settingsDeco('Initial Passes', Icons.skip_next, 'e.g. 5'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSaving ? null : _saveSettings,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)))
+                            : const Icon(Icons.save, size: 20),
+                        label: const Text('Save Settings'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: const Color(0xFF0A1128),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text('Configure championship timer, shields, and passes.',
-              style: TextStyle(color: Colors.white54, fontSize: 13)),
-          const Divider(color: Colors.white12, height: 32),
-
-          SizedBox(
-            width: 450,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _eventNameCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _settingsDeco('Event Name', Icons.event, 'e.g. Everest Spelling Bee'),
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _timerCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _settingsDeco('Timer (Seconds)', Icons.timer, 'e.g. 1800 = 30 minutes'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _shieldsCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _settingsDeco('Initial Shields', Icons.shield, 'e.g. 5'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _passesCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _settingsDeco('Initial Passes', Icons.skip_next, 'e.g. 5'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _saveSettings,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A1128)))
-                        : const Icon(Icons.save, size: 20),
-                    label: const Text('Save Settings'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD700),
-                      foregroundColor: const Color(0xFF0A1128),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -803,11 +999,13 @@ class _WordBankUploadTabState extends State<_WordBankUploadTab> {
             children: [
               const Icon(Icons.upload_file, color: Color(0xFFFFD700), size: 28),
               const SizedBox(width: 12),
-              Text('Word Bank Upload',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+              Expanded(
+                child: Text('Word Bank Upload',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -938,59 +1136,73 @@ class _LeaderboardTab extends ConsumerWidget {
                   ),
                 );
               }
-              return ListView.separated(
-                itemCount: results.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final r = results[index];
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: index < 3
-                              ? const Color(0xFFFFD700).withOpacity(0.3)
-                              : Colors.white.withOpacity(0.1),
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: index < 3 ? const Color(0xFFFFD700) : Colors.white54,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 400;
+                  return ListView.separated(
+                    itemCount: results.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final r = results[index];
+                      return Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 10 : 16,
+                          vertical: 12,
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(r.studentName,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontWeight: FontWeight.w600)),
-                              Text('Grade ${r.grade}',
-                                  style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                            ],
-                          ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Row(
                           children: [
-                            Text('Score: ${r.finalScore}',
-                                style: const TextStyle(
-                                    color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
-                            Text('${r.correctAnswers} Correct',
-                                style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                            CircleAvatar(
+                              radius: isMobile ? 14 : 18,
+                              backgroundColor: index < 3
+                                  ? const Color(0xFFFFD700).withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.1),
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  color: index < 3 ? const Color(0xFFFFD700) : Colors.white54,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isMobile ? 12 : 14,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: isMobile ? 8 : 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(r.studentName,
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: isMobile ? 13 : 14),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                  Text('Grade ${r.grade}',
+                                      style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('Score: ${r.finalScore}',
+                                    style: TextStyle(
+                                        color: const Color(0xFFFFD700),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: isMobile ? 12 : 14)),
+                                Text('${r.correctAnswers} Correct',
+                                    style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               );

@@ -281,6 +281,19 @@ class ApiService {
     }
   }
 
+  Future<void> deleteStudent(String studentId) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/examiner/students/$studentId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to delete student';
+      throw Exception(error);
+    }
+  }
+
   // --- Game ---
 
   Future<Map<String, dynamic>> validateToken(String token) async {
