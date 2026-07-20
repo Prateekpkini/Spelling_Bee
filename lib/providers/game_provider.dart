@@ -45,6 +45,9 @@ class GameState {
   final String studentId;
   final String studentName;
   final String grade;
+  final bool offlineMode;       // true = airplane-mode flow
+  final bool resultSubmitted;   // true = results uploaded to server
+  final String? gameToken;      // stored for offline submission
 
   const GameState({
     this.score = 0,
@@ -63,6 +66,9 @@ class GameState {
     this.studentId = '',
     this.studentName = '',
     this.grade = '',
+    this.offlineMode = false,
+    this.resultSubmitted = false,
+    this.gameToken,
   });
 
   int get timeRemainingSeconds => (timeRemainingMs / 1000).ceil();
@@ -105,6 +111,9 @@ class GameState {
     String? studentId,
     String? studentName,
     String? grade,
+    bool? offlineMode,
+    bool? resultSubmitted,
+    String? gameToken,
   }) {
     return GameState(
       score: score ?? this.score,
@@ -123,6 +132,9 @@ class GameState {
       studentId: studentId ?? this.studentId,
       studentName: studentName ?? this.studentName,
       grade: grade ?? this.grade,
+      offlineMode: offlineMode ?? this.offlineMode,
+      resultSubmitted: resultSubmitted ?? this.resultSubmitted,
+      gameToken: gameToken ?? this.gameToken,
     );
   }
 }
@@ -144,6 +156,8 @@ class GameNotifier extends StateNotifier<GameState> {
     required int timerSeconds,
     required int initialShields,
     required int initialPasses,
+    bool offlineMode = false,
+    String? gameToken,
   }) {
     _timer?.cancel();
     state = GameState(
@@ -155,6 +169,8 @@ class GameNotifier extends StateNotifier<GameState> {
       shields: initialShields,
       passes: initialPasses,
       status: GameStatus.ready,
+      offlineMode: offlineMode,
+      gameToken: gameToken,
     );
   }
 
@@ -344,8 +360,11 @@ class GameNotifier extends StateNotifier<GameState> {
       feedback: null,
     );
 
-    // Save result to Firestore
-    _saveResult();
+    // In offline mode, do NOT auto-submit — the upload screen handles it.
+    // In normal mode, save immediately as before.
+    if (!state.offlineMode) {
+      _saveResult();
+    }
   }
 
   Future<void> _saveResult() async {
@@ -365,9 +384,35 @@ class GameNotifier extends StateNotifier<GameState> {
 
     try {
       await apiService.submitResult(result);
+      state = state.copyWith(resultSubmitted: true);
     } catch (e) {
       print('Failed to save result: $e');
     }
+  }
+
+  /// Manually submit the result (for offline mode upload screen).
+  Future<void> submitResultManually() async {
+    final result = Result(
+      id: '',
+      studentId: state.studentId,
+      studentName: state.studentName,
+      grade: state.grade,
+      finalScore: state.score,
+      correctAnswers: state.correctCount,
+      wrongAnswers: state.wrongCount,
+      passesUsed: state.passesUsed,
+      timeRemainingSeconds: state.timeRemainingSeconds,
+      accuracy: state.accuracy,
+      createdAt: DateTime.now(),
+    );
+
+    if (state.offlineMode && state.gameToken != null) {
+      await apiService.submitOfflineResult(result, state.gameToken!);
+    } else {
+      await apiService.submitResult(result);
+    }
+
+    state = state.copyWith(resultSubmitted: true);
   }
 
   @override

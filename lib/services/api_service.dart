@@ -326,6 +326,23 @@ class ApiService {
     }
   }
 
+  /// Pre-loads all game data (words, settings, student info) WITHOUT
+  /// consuming the token. Used for the offline/airplane-mode flow.
+  Future<Map<String, dynamic>> preloadGameData(String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/game/preload/$token'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to preload game data';
+      throw Exception(error);
+    }
+  }
+
   Future<void> submitResult(Result result) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/game/submit'),
@@ -350,7 +367,47 @@ class ApiService {
       throw Exception(error);
     }
   }
+
+  /// Submits game results after offline/airplane-mode play.
+  /// Also marks the token as used atomically on the server.
+  Future<void> submitOfflineResult(Result result, String token) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/game/submit-offline'),
+      headers: _headers,
+      body: jsonEncode({
+        'token': token,
+        'student_id': result.studentId,
+        'student_name': result.studentName,
+        'grade': result.grade,
+        'final_score': result.finalScore,
+        'correct_answers': result.correctAnswers,
+        'wrong_answers': result.wrongAnswers,
+        'passes_used': result.passesUsed,
+        'time_remaining_seconds': result.timeRemainingSeconds,
+        'accuracy': result.accuracy,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to submit offline result';
+      throw Exception(error);
+    }
+  }
+
+  /// Checks if the server is reachable (for connectivity detection).
+  Future<bool> checkConnectivity() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$_baseUrl/game/config'), headers: _headers)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 // Global instance for now, can be provided via Riverpod later
 final apiService = ApiService();
+

@@ -9,6 +9,7 @@ import 'package:spelling_bee/screens/examiner/register_student_screen.dart';
 import 'package:spelling_bee/screens/examiner/my_students_screen.dart';
 import 'package:spelling_bee/screens/examiner/leaderboard_screen.dart';
 import 'package:spelling_bee/screens/student/token_screen.dart';
+import 'package:spelling_bee/screens/student/preload_screen.dart';
 import 'package:spelling_bee/screens/student/game_screen.dart';
 import 'package:spelling_bee/screens/student/result_screen.dart';
 import 'package:spelling_bee/screens/error_screen.dart';
@@ -123,6 +124,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
           }
           return TokenScreen(token: token);
+        },
+      ),
+      GoRoute(
+        path: '/play/preload',
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          if (token == null || token.isEmpty) {
+            return const ErrorScreen(
+              message: 'No game token provided for preloading.',
+            );
+          }
+          return PreloadScreen(token: token);
         },
       ),
       GoRoute(

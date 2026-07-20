@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/models/student.dart';
-import 'package:spelling_bee/models/word.dart';
-import 'package:spelling_bee/providers/game_provider.dart';
-import 'package:spelling_bee/providers/student_provider.dart';
 import 'package:spelling_bee/services/api_service.dart';
 import 'package:spelling_bee/widgets/responsive_scaffold.dart';
 
@@ -28,54 +25,12 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
     _validationFuture = apiService.validateToken(widget.token);
   }
 
-  Future<void> _startChampionship(Student student) async {
+  void _startChampionship(Student student) {
     if (_isStarting) return;
     setState(() => _isStarting = true);
 
-    try {
-      final response = await apiService.startGame(widget.token);
-      
-      final wordsData = response['words'] as List<dynamic>;
-      final List<Word> words = wordsData.map((e) => Word.fromJson(e)).toList();
-
-      final settings = response['settings'];
-      
-      if (words.isEmpty) {
-        if (mounted) {
-          setState(() => _isStarting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No words found for this grade. Please contact the examiner.'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-        return;
-      }
-
-      // 3. Initialize game state
-      ref.read(gameProvider.notifier).initGame(
-            wordBank: words,
-            studentId: student.id,
-            studentName: student.name,
-            grade: student.grade,
-            timerSeconds: settings['timer_seconds'],
-            initialShields: settings['initial_shields'],
-            initialPasses: settings['initial_passes'],
-          );
-
-      // 4. Navigate to game
-      if (mounted) {
-        context.go('/play/game/${student.id}');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isStarting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
-      }
-    }
+    // Navigate to the preload screen which handles data download + airplane mode flow
+    context.go('/play/preload?token=${widget.token}');
   }
 
   @override

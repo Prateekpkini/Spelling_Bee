@@ -16,6 +16,8 @@ class ResultScreen extends ConsumerStatefulWidget {
 
 class _ResultScreenState extends ConsumerState<ResultScreen> {
   String _eventName = 'Everest Spelling Bee Open Challenge';
+  bool _isUploading = false;
+  String? _uploadError;
 
   @override
   void initState() {
@@ -33,6 +35,44 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       }
     } catch (e) {
       debugPrint('Failed to load config: $e');
+    }
+  }
+
+  Future<void> _uploadResults() async {
+    setState(() {
+      _isUploading = true;
+      _uploadError = null;
+    });
+
+    try {
+      // Check connectivity first
+      final isOnline = await apiService.checkConnectivity();
+      if (!isOnline) {
+        if (mounted) {
+          setState(() {
+            _isUploading = false;
+            _uploadError =
+                'No internet connection detected. Please turn off Airplane Mode and try again.';
+          });
+        }
+        return;
+      }
+
+      // Submit the result
+      await ref.read(gameProvider.notifier).submitResultManually();
+
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+          _uploadError = 'Upload failed: $e\n\nPlease try again.';
+        });
+      }
     }
   }
 
@@ -70,6 +110,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
         endIcon = Icons.done_all;
         endColor = AppColors.primaryDeep;
     }
+
+    // Determine if we need to show the upload flow
+    final needsUpload = gameState.offlineMode && !gameState.resultSubmitted;
+    final uploadSuccess = gameState.offlineMode && gameState.resultSubmitted;
 
     return ResponsiveScaffold(
       child: SingleChildScrollView(
@@ -222,22 +266,149 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Completion message
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primaryDeep.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Your results have been saved. You may now close this window.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+            // ── Offline Upload Section ──────────────────────────────
+            if (needsUpload) ...[
+              // Airplane mode off instruction
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFF9800)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.airplanemode_inactive,
+                        color: Color(0xFFFF9800), size: 36),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Test Complete! Please turn off Airplane Mode',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: const Color(0xFFE65100),
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
                     ),
-                textAlign: TextAlign.center,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your results are saved locally. Turn off Airplane Mode and tap the button below to upload them to the server.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF795548),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+
+              // Error message (if upload failed)
+              if (_uploadError != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    _uploadError!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.error,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Upload button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _isUploading ? null : _uploadResults,
+                  icon: _isUploading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.cloud_upload, size: 24),
+                  label: Text(_isUploading
+                      ? 'Uploading...'
+                      : 'Upload Results'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDeep,
+                    foregroundColor: Colors.white,
+                    textStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+
+            // ── Upload Success Section ─────────────────────────────
+            if (uploadSuccess) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.cloud_done,
+                        color: AppColors.success, size: 36),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Results Uploaded Successfully!',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your championship results have been saved to the server. You may now close this window.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // ── Normal (non-offline) completion message ────────────
+            if (!gameState.offlineMode) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryDeep.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Your results have been saved. You may now close this window.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
           ],
         ),
