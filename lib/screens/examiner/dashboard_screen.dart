@@ -79,25 +79,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(width: 24),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _eventName,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'OPEN CHAMPIONSHIP',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: const Color(0xFFFFD700),
-                                  letterSpacing: 2,
-                                ),
-                          ),
-                        ],
+                      child: Text(
+                        _eventName,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ),
                   ],

@@ -58,6 +58,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
 
           final result = snapshot.data!;
           final status = result['status'];
+          final gameSettings = result['settings'] as Map<String, dynamic>? ?? {};
 
           if (status == 'not_found') {
             return _buildError(
@@ -68,7 +69,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
           } else if (status == 'active') {
             final student = Student.fromJson(result['student']);
             final eventName = result['event_name'] ?? 'Everest Spelling Bee Open Challenge';
-            return _buildIntro(student, eventName);
+            return _buildIntro(student, eventName, gameSettings);
           }
           
           return _buildError('Unknown error.');
@@ -147,7 +148,11 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
     );
   }
 
-  Widget _buildIntro(Student student, String eventName) {
+  Widget _buildIntro(Student student, String eventName, Map<String, dynamic> settings) {
+    final timerMinutes = ((settings['timer_seconds'] ?? 1800) as num) ~/ 60;
+    final shields = (settings['initial_shields'] ?? 5) as num;
+    final passes = (settings['initial_passes'] ?? 5) as num;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -179,13 +184,6 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
               style: Theme.of(context).textTheme.headlineLarge,
               textAlign: TextAlign.center,
             ),
-            Text(
-              'OPEN CHAMPIONSHIP',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.gold,
-                    letterSpacing: 3,
-                  ),
-            ),
             const SizedBox(height: 32),
 
             // Student details card
@@ -214,7 +212,7 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Rules summary
+            // Rules summary — dynamic from admin settings
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -227,9 +225,9 @@ class _TokenScreenState extends ConsumerState<TokenScreen> {
                 children: [
                   Text('Quick Rules', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  _RuleLine(Icons.timer, '30 minutes to spell as many words as possible'),
-                  _RuleLine(Icons.shield, '5 Shields – wrong answers cost a shield'),
-                  _RuleLine(Icons.skip_next, '5 Passes – skip a word with no penalty'),
+                  _RuleLine(Icons.timer, '$timerMinutes minutes to spell as many words as possible'),
+                  _RuleLine(Icons.shield, '$shields Shields – wrong answers cost a shield'),
+                  _RuleLine(Icons.skip_next, '$passes Passes – skip a word with no penalty'),
                   _RuleLine(Icons.star, 'Earn bonus time, passes & shields for streaks'),
                 ],
               ),

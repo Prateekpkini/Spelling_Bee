@@ -185,6 +185,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   final _answerFocus = FocusNode();
   final _ttsService = TtsService();
   bool _gameStarted = false;
+  int _lastSpokenIndex = -1; // Track last auto-pronounced word index
 
   @override
   void initState() {
@@ -204,6 +205,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!_gameStarted) {
       _gameStarted = true;
       ref.read(gameProvider.notifier).startGame();
+    }
+  }
+
+  /// Auto-pronounce the current word when the word index changes.
+  void _autoPronounce(GameState gameState) {
+    if (gameState.status == GameStatus.playing &&
+        gameState.currentWord != null &&
+        gameState.currentWordIndex != _lastSpokenIndex &&
+        gameState.feedback == null) {
+      _lastSpokenIndex = gameState.currentWordIndex;
+      _ttsService.speak(gameState.currentWord!.spellingBritish);
     }
   }
 
@@ -257,9 +269,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final theme = ref.watch(themeProvider);
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startIfNeeded();
+      // Auto-pronounce the current word when it changes
+      _autoPronounce(gameState);
     });
 
     if (gameState.status == GameStatus.ended) {
@@ -296,13 +311,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
                                 children: [
                                   _buildWordCard(gameState, theme, isCompact),
                                   SizedBox(height: isCompact ? 6 : 10),
-                                  _buildAnswerInput(gameState, theme, isCompact),
+                                  _buildAnswerInput(gameState, theme, isCompact, isMobile: isMobile),
                                   SizedBox(height: isCompact ? 6 : 10),
                                   _buildActionButtons(gameState, theme, isCompact),
                                 ],
                               ),
                             ),
                           ),
+
+                          // ─── On-screen keyboard (mobile only) ──
+                          if (isMobile) _buildOnScreenKeyboard(gameState, theme),
                         ],
                       ),
 
@@ -501,7 +519,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ═══════════════════════════════════════════════════════════════════
   // Answer Input – Glassmorphism
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildAnswerInput(GameState state, ThemeState theme, bool isCompact) {
+  Widget _buildAnswerInput(GameState state, ThemeState theme, bool isCompact, {bool isMobile = false}) {
     final isPlaying = state.status == GameStatus.playing;
 
     return _GlassContainer(
@@ -510,8 +528,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
       child: TextField(
         controller: _answerController,
         focusNode: _answerFocus,
-        autofocus: true,
+        autofocus: !isMobile,
         enabled: isPlaying,
+        readOnly: isMobile, // Hide native keyboard on mobile; use on-screen keyboard
+        showCursor: true,
         textInputAction: TextInputAction.done,
         onSubmitted: (_) => _submitAnswer(),
         style: TextStyle(
@@ -642,6 +662,115 @@ class _GameScreenState extends ConsumerState<GameScreen>
           ],
         ),
       ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // On-Screen Keyboard – Mobile Only (A-Z + Backspace + NEXT)
+  // ═══════════════════════════════════════════════════════════════════
+  Widget _buildOnScreenKeyboard(GameState state, ThemeState theme) {
+    final isPlaying = state.status == GameStatus.playing;
+    const row1 = ['Q','W','E','R','T','Y','U','I','O','P'];
+    const row2 = ['A','S','D','F','G','H','J','K','L'];
+    const row3 = ['Z','X','C','V','B','N','M'];
+
+    Widget buildKey(String label, {double flex = 1, VoidCallback? onTap, Color? bg, Color? fg}) {
+      return Expanded(
+        flex: (flex * 10).toInt(),
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isPlaying ? onTap : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  color: bg ?? theme.glassFill,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.glassBorder, width: 0.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: fg ?? _GC.textBright,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildRow(List<String> keys) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: keys.map((k) => buildKey(
+          k,
+          onTap: () {
+            final text = _answerController.text;
+            final sel = _answerController.selection;
+            final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
+            final newText = text.substring(0, pos) + k + text.substring(pos);
+            _answerController.text = newText;
+            _answerController.selection = TextSelection.collapsed(offset: pos + 1);
+          },
+        )).toList(),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      decoration: BoxDecoration(
+        color: theme.glassFill.withOpacity(0.95),
+        border: Border(top: BorderSide(color: theme.glassBorder, width: 0.5)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          buildRow(row1),
+          buildRow(row2),
+          Row(
+            children: [
+              // Backspace key
+              buildKey('⌫', flex: 1.5, onTap: () {
+                final text = _answerController.text;
+                final sel = _answerController.selection;
+                final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
+                if (pos > 0) {
+                  final newText = text.substring(0, pos - 1) + text.substring(pos);
+                  _answerController.text = newText;
+                  _answerController.selection = TextSelection.collapsed(offset: pos - 1);
+                }
+              }),
+              ...row3.map((k) => buildKey(
+                k,
+                onTap: () {
+                  final text = _answerController.text;
+                  final sel = _answerController.selection;
+                  final pos = sel.isValid && sel.baseOffset >= 0 ? sel.baseOffset : text.length;
+                  final newText = text.substring(0, pos) + k + text.substring(pos);
+                  _answerController.text = newText;
+                  _answerController.selection = TextSelection.collapsed(offset: pos + 1);
+                },
+              )),
+              // NEXT / Submit key
+              buildKey(
+                'NEXT',
+                flex: 1.5,
+                bg: _GC.correct.withOpacity(0.3),
+                fg: _GC.correct,
+                onTap: _submitAnswer,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

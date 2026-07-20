@@ -17,20 +17,25 @@ router.get('/validate/:token', async (req, res) => {
       [token]
     );
 
-    const [settings] = await pool.execute('SELECT event_name FROM global_settings WHERE id = 1');
+    const [settings] = await pool.execute('SELECT event_name, timer_seconds, initial_shields, initial_passes FROM global_settings WHERE id = 1');
     const eventName = settings.length > 0 ? settings[0].event_name : 'Everest Spelling Bee Open Challenge';
+    const gameSettings = settings.length > 0 ? {
+      timer_seconds: settings[0].timer_seconds,
+      initial_shields: settings[0].initial_shields,
+      initial_passes: settings[0].initial_passes,
+    } : { timer_seconds: 1800, initial_shields: 5, initial_passes: 5 };
 
     if (rows.length === 0) {
-      return res.json({ status: 'not_found', student: null, event_name: eventName });
+      return res.json({ status: 'not_found', student: null, event_name: eventName, settings: gameSettings });
     }
 
     const student = rows[0];
 
     if (student.token_status === 'used') {
-      return res.json({ status: 'used', student, event_name: eventName });
+      return res.json({ status: 'used', student, event_name: eventName, settings: gameSettings });
     }
 
-    res.json({ status: 'active', student, event_name: eventName });
+    res.json({ status: 'active', student, event_name: eventName, settings: gameSettings });
   } catch (err) {
     console.error('Validate token error:', err);
     res.status(500).json({ error: 'Internal server error' });

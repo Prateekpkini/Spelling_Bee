@@ -61,7 +61,7 @@ class ExportService {
   }
 
   /// Generate a PDF document from results and trigger download.
-  Future<void> exportToPdf(List<Result> results) async {
+  Future<void> exportToPdf(List<Result> results, {String eventName = 'Spelling Bee'}) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -72,7 +72,7 @@ class ExportService {
           pw.Header(
             level: 0,
             child: pw.Text(
-              'Everest Spelling Bee – Open Championship',
+              eventName,
               style: pw.TextStyle(
                 fontSize: 20,
                 fontWeight: pw.FontWeight.bold,
