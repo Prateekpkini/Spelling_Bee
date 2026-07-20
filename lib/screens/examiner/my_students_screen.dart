@@ -240,24 +240,25 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
       ),
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 1000),
+          padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 'Registered Students',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
-                'View all students you have registered. Regenerate game links or remove students as needed.',
-                style: TextStyle(color: Colors.white70),
+                'Manage all students you have registered. You can regenerate their game links or remove them completely.',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Expanded(
                 child: _isLoading
                     ? const Center(
@@ -266,53 +267,13 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                         ),
                       )
                     : _students.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.people_outline,
-                              color: Colors.white24,
-                              size: 64,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'You haven\'t registered any students yet.',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () => context.go('/register'),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Register Student'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFD700),
-                                foregroundColor: const Color(0xFF0A1128),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? _buildEmptyState()
                     : LayoutBuilder(
                         builder: (context, constraints) {
-                          final isMobile = constraints.maxWidth < 500;
-                          return ListView.separated(
-                            itemCount: _students.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final student = _students[index];
-                              return GlassContainer(
-                                padding: const EdgeInsets.all(16),
-                                child: isMobile
-                                    ? _buildMobileCard(student)
-                                    : _buildDesktopCard(student),
-                              );
-                            },
-                          );
+                          if (constraints.maxWidth > 700) {
+                            return _buildDesktopTable(constraints.maxWidth);
+                          }
+                          return _buildMobileList();
                         },
                       ),
               ),
@@ -323,151 +284,382 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
     );
   }
 
-  // ── Desktop card: single row ───────────────────────────
-  Widget _buildDesktopCard(Student student) {
-    return Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
-          child: Text(
-            student.name.isNotEmpty
-                ? student.name[0].toUpperCase()
-                : '?',
-            style: const TextStyle(
-              color: Color(0xFFFFD700),
-              fontWeight: FontWeight.bold,
+  Widget _buildEmptyState() {
+    return Center(
+      child: GlassContainer(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(20),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.people_alt_outlined,
+                color: Colors.white,
+                size: 64,
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                student.name,
-                style: const TextStyle(
-                  color: Colors.white,
+            const SizedBox(height: 24),
+            const Text(
+              'No Students Yet',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Register your first student to see them here.',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/register'),
+              icon: const Icon(Icons.add),
+              label: const Text('Register Student'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                foregroundColor: const Color(0xFF0A1128),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                textStyle: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Grade: ${student.grade}  •  Status: ${student.tokenStatus}',
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 13,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTable(double maxWidth) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Table Header
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Student',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  'Grade',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  'Status',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Actions',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => _regenerateLink(student),
-          icon: const Icon(Icons.refresh, size: 16),
-          label: const Text('Regenerate Link'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Colors.white30),
-          ),
-        ),
-        const SizedBox(width: 8),
-        OutlinedButton.icon(
-          onPressed: () => _deleteStudent(student),
-          icon: const Icon(Icons.delete_outline, size: 16),
-          label: const Text('Delete'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.redAccent,
-            side: const BorderSide(color: Colors.redAccent),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Mobile card: stacked layout ────────────────────────
-  Widget _buildMobileCard(Student student) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Student info row
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFFFD700).withOpacity(0.2),
-              child: Text(
-                student.name.isNotEmpty
-                    ? student.name[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  color: Color(0xFFFFD700),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 16),
+          // Table Rows
+          ..._students.map((student) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
                 children: [
-                  Text(
-                    student.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: const Color(
+                            0xFFFFD700,
+                          ).withAlpha(40),
+                          child: Text(
+                            student.name.isNotEmpty
+                                ? student.name[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            student.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Grade: ${student.grade}  •  ${student.tokenStatus}',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
+                  Expanded(
+                    flex: 1,
+                    child: Text(
+                      'Grade ${student.grade}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: student.tokenStatus.toLowerCase() == 'active'
+                              ? Colors.green.withAlpha(40)
+                              : Colors.orange.withAlpha(40),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: student.tokenStatus.toLowerCase() == 'active'
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                        ),
+                        child: Text(
+                          student.tokenStatus,
+                          style: TextStyle(
+                            color: student.tokenStatus.toLowerCase() == 'active'
+                                ? Colors.greenAccent
+                                : Colors.orangeAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _regenerateLink(student),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Regenerate'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withAlpha(20),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(color: Colors.white30),
+                            ),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => _deleteStudent(student),
+                          icon: const Icon(Icons.delete_outline, size: 16),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent.withAlpha(20),
+                            foregroundColor: Colors.redAccent,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(color: Colors.redAccent),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Action buttons row
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _regenerateLink(student),
-                icon: const Icon(Icons.refresh, size: 14),
-                label: const Text('Regenerate', style: TextStyle(fontSize: 12)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white30),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileList() {
+    return ListView.separated(
+      itemCount: _students.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final student = _students[index];
+        return GlassContainer(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Student info row
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFFFFD700).withAlpha(40),
+                    child: Text(
+                      student.name.isNotEmpty
+                          ? student.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              'Grade ${student.grade}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '•',
+                              style: TextStyle(color: Colors.white30),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              student.tokenStatus,
+                              style: TextStyle(
+                                color:
+                                    student.tokenStatus.toLowerCase() ==
+                                        'active'
+                                    ? Colors.greenAccent
+                                    : Colors.orangeAccent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _deleteStudent(student),
-                icon: const Icon(Icons.delete_outline, size: 14),
-                label: const Text('Delete', style: TextStyle(fontSize: 12)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  side: const BorderSide(color: Colors.redAccent),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                ),
+              const SizedBox(height: 20),
+              const Divider(color: Colors.white24, height: 1),
+              const SizedBox(height: 20),
+              // Action buttons row
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _regenerateLink(student),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text(
+                        'Regenerate Link',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withAlpha(20),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: Colors.white30),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => _deleteStudent(student),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Delete', style: TextStyle(fontSize: 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent.withAlpha(20),
+                      foregroundColor: Colors.redAccent,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Colors.redAccent),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
