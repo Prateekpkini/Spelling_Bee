@@ -13,6 +13,7 @@ import 'package:spelling_bee/screens/student/preload_screen.dart';
 import 'package:spelling_bee/screens/student/game_screen.dart';
 import 'package:spelling_bee/screens/student/result_screen.dart';
 import 'package:spelling_bee/screens/error_screen.dart';
+import 'package:spelling_bee/screens/public_leaderboard_screen.dart';
 
 /// A ChangeNotifier that listens to the authStateProvider and notifies
 /// GoRouter when auth state changes so redirects are re-evaluated.
@@ -48,7 +49,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 2. Allow ALL student-facing routes to bypass authentication completely
       if (path.startsWith('/play') ||
           path.startsWith('/token') ||
-          path.startsWith('/game')) {
+          path.startsWith('/game') ||
+          path.startsWith('/public-leaderboard')) {
         return null;
       }
 
@@ -110,6 +112,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/leaderboard',
         builder: (context, state) => const LeaderboardScreen(),
+      ),
+      GoRoute(
+        path: '/public-leaderboard',
+        builder: (context, state) {
+          final grade = state.uri.queryParameters['grade'];
+          return PublicLeaderboardScreen(initialGrade: grade);
+        },
       ),
 
       // ── Student Routes ───────────────────────────────────────────

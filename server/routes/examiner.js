@@ -72,18 +72,72 @@ router.post('/students', authenticateToken, requireExaminer, async (req, res) =>
 
 /**
  * GET /api/leaderboard
- * Returns all results ranked by leaderboard criteria.
- * Accessible to any authenticated user.
+ * Returns results ranked by leaderboard criteria.
+ * - Examiners see only students they registered.
+ * - Super Admins see all students.
+ * - Optional ?grade=X query parameter filters by grade.
+ * Requires authentication.
  */
-router.get('/leaderboard', async (req, res) => {
+router.get('/leaderboard', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.execute(
-      `SELECT * FROM results
-       ORDER BY final_score DESC, correct_answers DESC, wrong_answers ASC, time_remaining_seconds DESC`
-    );
+    const { grade } = req.query;
+    const role = req.user.role;
+
+    let query;
+    const params = [];
+
+    if (role === 'superadmin') {
+      // Super admin sees all results
+      query = `SELECT r.* FROM results r`;
+      if (grade) {
+        query += ` WHERE r.grade = ?`;
+        params.push(grade);
+      }
+    } else {
+      // Examiner sees only their students' results
+      query = `SELECT r.* FROM results r
+               INNER JOIN students s ON r.student_id = s.id
+               WHERE s.examiner_id = ?`;
+      params.push(req.user.userId);
+      if (grade) {
+        query += ` AND r.grade = ?`;
+        params.push(grade);
+      }
+    }
+
+    query += ` ORDER BY r.final_score DESC, r.correct_answers DESC, r.wrong_answers ASC, r.time_remaining_seconds DESC`;
+
+    const [rows] = await pool.execute(query, params);
     res.json({ results: rows });
   } catch (err) {
     console.error('Leaderboard error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/leaderboard/public
+ * Public leaderboard — no authentication required.
+ * Returns all results for the shareable link.
+ * Optional ?grade=X query parameter filters by grade.
+ */
+router.get('/leaderboard/public', async (req, res) => {
+  try {
+    const { grade } = req.query;
+    let query = `SELECT * FROM results`;
+    const params = [];
+
+    if (grade) {
+      query += ` WHERE grade = ?`;
+      params.push(grade);
+    }
+
+    query += ` ORDER BY final_score DESC, correct_answers DESC, wrong_answers ASC, time_remaining_seconds DESC`;
+
+    const [rows] = await pool.execute(query, params);
+    res.json({ results: rows });
+  } catch (err) {
+    console.error('Public leaderboard error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

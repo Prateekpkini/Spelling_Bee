@@ -67,7 +67,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final resultsAsync = ref.watch(resultsProvider);
+    final resultsAsync = ref.watch(resultsProvider(null));
 
     return GlassScaffold(
       appBar: AppBar(

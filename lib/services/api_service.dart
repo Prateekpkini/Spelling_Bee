@@ -234,10 +234,34 @@ class ApiService {
     }
   }
 
-  Future<List<Result>> getLeaderboard() async {
+  Future<List<Result>> getLeaderboard({String? grade}) async {
+    String url = '$_baseUrl/leaderboard';
+    if (grade != null && grade.isNotEmpty) {
+      url += '?grade=$grade';
+    }
     final response = await http.get(
-      Uri.parse('$_baseUrl/leaderboard'),
+      Uri.parse(url),
       headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body)['results'];
+      return data.map((e) => Result.fromJson(e)).toList();
+    } else {
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to fetch leaderboard';
+      throw Exception(error);
+    }
+  }
+
+  Future<List<Result>> getPublicLeaderboard({String? grade}) async {
+    String url = '$_baseUrl/leaderboard/public';
+    if (grade != null && grade.isNotEmpty) {
+      url += '?grade=$grade';
+    }
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {

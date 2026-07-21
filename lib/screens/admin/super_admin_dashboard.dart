@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spelling_bee/app/theme.dart';
 import 'package:spelling_bee/models/examiner.dart';
+import 'package:spelling_bee/models/result.dart';
 import 'package:spelling_bee/providers/auth_provider.dart';
 import 'package:spelling_bee/providers/result_provider.dart';
 import 'package:spelling_bee/services/api_service.dart';
+import 'package:spelling_bee/services/export_service.dart';
+import 'package:flutter/services.dart';
+import 'package:universal_html/html.dart' as html;
 
 import 'package:file_picker/file_picker.dart';
 
@@ -1091,16 +1095,101 @@ class _WordBankUploadTabState extends State<_WordBankUploadTab> {
 // Tab 4: Global Leaderboard
 // ══════════════════════════════════════════════════════════════════════
 
-class _LeaderboardTab extends ConsumerWidget {
+class _LeaderboardTab extends ConsumerStatefulWidget {
   const _LeaderboardTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final resultsAsync = ref.watch(resultsProvider);
+  ConsumerState<_LeaderboardTab> createState() => _LeaderboardTabState();
+}
+
+class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
+  String? _selectedGrade; // null = All Grades
+  bool _exporting = false;
+  final _exportService = ExportService();
+
+  String get _gradeFilterParam => _selectedGrade ?? '';
+
+  Future<void> _exportExcel(List<Result> results) async {
+    setState(() => _exporting = true);
+    try {
+      await _exportService.exportToExcel(results);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Excel file exported successfully!', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _exportPdf(List<Result> results) async {
+    setState(() => _exporting = true);
+    try {
+      await _exportService.exportToPdf(results);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file exported successfully!', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  void _shareLink() {
+    // Build the public leaderboard URL from the current host
+    final baseUrl = html.window.location.origin;
+    String url = '$baseUrl/public-leaderboard';
+    if (_selectedGrade != null) {
+      url += '?grade=$_selectedGrade';
+    }
+
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Public leaderboard link copied!\n$url',
+                  style: const TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resultsAsync = ref.watch(resultsProvider(_selectedGrade));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header row
         Row(
           children: [
             const Icon(Icons.leaderboard, color: Color(0xFFFFD700), size: 28),
@@ -1114,13 +1203,52 @@ class _LeaderboardTab extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () => ref.refresh(resultsProvider),
+              onPressed: () => ref.invalidate(resultsProvider(_selectedGrade)),
               color: const Color(0xFFFFD700),
               tooltip: 'Refresh',
             ),
           ],
         ),
         const Divider(color: Colors.white12, height: 24),
+
+        // Grade filter dropdown + action buttons
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 500;
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildGradeDropdown(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildExcelButton(resultsAsync)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildPdfButton(resultsAsync)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildShareButton()),
+                    ],
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                SizedBox(width: 200, child: _buildGradeDropdown()),
+                const SizedBox(width: 16),
+                _buildExcelButton(resultsAsync),
+                const SizedBox(width: 8),
+                _buildPdfButton(resultsAsync),
+                const SizedBox(width: 8),
+                _buildShareButton(),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Results list
         Expanded(
           child: resultsAsync.when(
             data: (results) {
@@ -1131,7 +1259,12 @@ class _LeaderboardTab extends ConsumerWidget {
                     children: [
                       Icon(Icons.emoji_events_outlined, color: Colors.white24, size: 48),
                       const SizedBox(height: 12),
-                      Text('No results yet.', style: TextStyle(color: Colors.white38)),
+                      Text(
+                        _selectedGrade != null
+                            ? 'No results for Grade $_selectedGrade yet.'
+                            : 'No results yet.',
+                        style: const TextStyle(color: Colors.white38),
+                      ),
                     ],
                   ),
                 );
@@ -1214,6 +1347,95 @@ class _LeaderboardTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGradeDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: DropdownButton<String?>(
+        value: _selectedGrade,
+        isExpanded: true,
+        dropdownColor: const Color(0xFF1A2744),
+        underline: const SizedBox(),
+        icon: const Icon(Icons.filter_list, color: Color(0xFFFFD700), size: 20),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        hint: const Text('All Grades', style: TextStyle(color: Colors.white70)),
+        items: [
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('All Grades', style: TextStyle(color: Colors.white)),
+          ),
+          ...List.generate(10, (i) => (i + 1).toString()).map((g) {
+            return DropdownMenuItem<String?>(
+              value: g,
+              child: Text('Grade $g', style: const TextStyle(color: Colors.white)),
+            );
+          }),
+        ],
+        onChanged: (v) => setState(() => _selectedGrade = v),
+      ),
+    );
+  }
+
+  Widget _buildExcelButton(AsyncValue<List<Result>> resultsAsync) {
+    return ElevatedButton.icon(
+      onPressed: _exporting
+          ? null
+          : () {
+              final results = resultsAsync.valueOrNull;
+              if (results != null && results.isNotEmpty) {
+                _exportExcel(results);
+              }
+            },
+      icon: const Icon(Icons.table_chart_outlined, size: 16),
+      label: const Text('Excel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFFFD700),
+        foregroundColor: const Color(0xFF0A1128),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  Widget _buildPdfButton(AsyncValue<List<Result>> resultsAsync) {
+    return ElevatedButton.icon(
+      onPressed: _exporting
+          ? null
+          : () {
+              final results = resultsAsync.valueOrNull;
+              if (results != null && results.isNotEmpty) {
+                _exportPdf(results);
+              }
+            },
+      icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+      label: const Text('PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFFFD700),
+        foregroundColor: const Color(0xFF0A1128),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  Widget _buildShareButton() {
+    return ElevatedButton.icon(
+      onPressed: _shareLink,
+      icon: const Icon(Icons.share, size: 16),
+      label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white.withOpacity(0.15),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 }
