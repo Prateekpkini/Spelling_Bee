@@ -293,6 +293,14 @@ class _ResultCard extends StatelessWidget {
                       fontSize: 12,
                     ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                'Time: ${result.timeTakenSeconds}s',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+              ),
             ],
           ),
         ],

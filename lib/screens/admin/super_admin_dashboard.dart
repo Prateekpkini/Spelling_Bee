@@ -1171,6 +1171,46 @@ class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
     copyTextRobust(context, url);
   }
 
+  Future<void> _deleteStudent(String studentId, String studentName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0A1128),
+        title: const Text('Delete Student', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to delete "$studentName"? This action cannot be undone.', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await apiService.adminDeleteStudent(studentId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Student deleted successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+          );
+          ref.invalidate(resultsProvider(_selectedGrade));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete student: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final resultsAsync = ref.watch(resultsProvider(_selectedGrade));
@@ -1350,7 +1390,15 @@ class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
                                         fontSize: isMobile ? 12 : 14)),
                                 Text('${r.correctAnswers} Correct',
                                     style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                Text('Time: ${r.timeTakenSeconds}s',
+                                    style: const TextStyle(color: Colors.white38, fontSize: 12)),
                               ],
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              onPressed: () => _deleteStudent(r.studentId, r.studentName),
+                              tooltip: 'Delete Student',
                             ),
                           ],
                         ),

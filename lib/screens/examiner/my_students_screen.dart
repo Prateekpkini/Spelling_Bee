@@ -413,7 +413,9 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 16),
           // Table Rows
-          ..._students.map((student) {
+          Expanded(
+            child: ListView(
+              children: _students.map((student) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
@@ -539,6 +541,8 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
               ),
             );
           }).toList(),
+            ),
+          ),
         ],
       ),
     );

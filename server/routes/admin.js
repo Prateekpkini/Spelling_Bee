@@ -90,6 +90,24 @@ router.delete('/teachers/:id', async (req, res) => {
 });
 
 /**
+ * DELETE /api/admin/students/:id
+ * Deletes a student by ID.
+ */
+router.delete('/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Delete results first to avoid foreign key constraints (if any)
+    await pool.execute('DELETE FROM results WHERE student_id = ?', [id]);
+    await pool.execute('DELETE FROM students WHERE id = ?', [id]);
+    
+    res.json({ message: 'Student deleted successfully' });
+  } catch (err) {
+    console.error('Delete student error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/admin/settings
  * Returns current global game settings.
  */

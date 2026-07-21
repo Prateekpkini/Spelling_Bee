@@ -10,6 +10,7 @@ class Result {
   final int wrongAnswers;
   final int passesUsed;
   final int timeRemainingSeconds;
+  final int timeTakenSeconds;
   final double accuracy;
   final DateTime createdAt;
 
@@ -23,6 +24,7 @@ class Result {
     required this.wrongAnswers,
     required this.passesUsed,
     required this.timeRemainingSeconds,
+    this.timeTakenSeconds = 0,
     required this.accuracy,
     required this.createdAt,
   });
@@ -38,6 +40,7 @@ class Result {
       wrongAnswers: (data['wrong_answers'] ?? 0).toInt(),
       passesUsed: (data['passes_used'] ?? 0).toInt(),
       timeRemainingSeconds: (data['time_remaining_seconds'] ?? 0).toInt(),
+      timeTakenSeconds: (data['time_taken_seconds'] ?? 0).toInt(),
       accuracy: double.tryParse(data['accuracy']?.toString() ?? '0') ?? 0.0,
       createdAt: data['created_at'] != null 
           ? DateTime.tryParse(data['created_at']) ?? DateTime.now() 
@@ -56,6 +59,7 @@ class Result {
       'wrong_answers': wrongAnswers,
       'passes_used': passesUsed,
       'time_remaining_seconds': timeRemainingSeconds,
+      'time_taken_seconds': timeTakenSeconds,
       'accuracy': accuracy,
       'created_at': createdAt.toIso8601String(),
     };

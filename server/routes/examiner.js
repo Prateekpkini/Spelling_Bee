@@ -88,16 +88,19 @@ router.get('/leaderboard', authenticateToken, async (req, res) => {
 
     if (role === 'superadmin') {
       // Super admin sees all results
-      query = `SELECT r.* FROM results r`;
+      query = `SELECT r.*, (g.timer_seconds - r.time_remaining_seconds) AS time_taken_seconds 
+               FROM results r CROSS JOIN global_settings g WHERE g.id = 1`;
       if (grade) {
-        query += ` WHERE r.grade = ?`;
+        query += ` AND r.grade = ?`;
         params.push(grade);
       }
     } else {
       // Examiner sees only their students' results
-      query = `SELECT r.* FROM results r
+      query = `SELECT r.*, (g.timer_seconds - r.time_remaining_seconds) AS time_taken_seconds 
+               FROM results r
+               CROSS JOIN global_settings g
                INNER JOIN students s ON r.student_id = s.id
-               WHERE s.examiner_id = ?`;
+               WHERE s.examiner_id = ? AND g.id = 1`;
       params.push(req.user.userId);
       if (grade) {
         query += ` AND r.grade = ?`;
@@ -124,11 +127,12 @@ router.get('/leaderboard', authenticateToken, async (req, res) => {
 router.get('/leaderboard/public', async (req, res) => {
   try {
     const { grade } = req.query;
-    let query = `SELECT * FROM results`;
+    let query = `SELECT r.*, (g.timer_seconds - r.time_remaining_seconds) AS time_taken_seconds 
+                 FROM results r CROSS JOIN global_settings g WHERE g.id = 1`;
     const params = [];
 
     if (grade) {
-      query += ` WHERE grade = ?`;
+      query += ` AND r.grade = ?`;
       params.push(grade);
     }
 

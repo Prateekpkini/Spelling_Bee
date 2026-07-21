@@ -425,6 +425,11 @@ class _LeaderboardEntry extends StatelessWidget {
                 '${result.correctAnswers}✓ ${result.wrongAnswers}✗ ${result.accuracy.toStringAsFixed(0)}%',
                 style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
+              const SizedBox(height: 2),
+              Text(
+                'Time: ${result.timeTakenSeconds}s',
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
             ],
           ),
         ],

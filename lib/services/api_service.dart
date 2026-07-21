@@ -234,6 +234,18 @@ class ApiService {
     }
   }
 
+  Future<void> adminDeleteStudent(String studentId) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/admin/students/$studentId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body)['error'] ?? 'Failed to delete student';
+      throw Exception(error);
+    }
+  }
+
   Future<List<Result>> getLeaderboard({String? grade}) async {
     String url = '$_baseUrl/leaderboard';
     if (grade != null && grade.isNotEmpty) {
