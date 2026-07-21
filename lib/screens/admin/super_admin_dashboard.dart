@@ -10,8 +10,9 @@ import 'package:spelling_bee/services/api_service.dart';
 import 'package:spelling_bee/services/export_service.dart';
 import 'package:flutter/services.dart';
 import 'package:universal_html/html.dart' as html;
-
 import 'package:file_picker/file_picker.dart';
+import 'package:spelling_bee/widgets/link_dialog.dart';
+import 'package:spelling_bee/utils/clipboard_utils.dart';
 
 class SuperAdminDashboard extends ConsumerStatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -1104,6 +1105,7 @@ class _LeaderboardTab extends ConsumerStatefulWidget {
 
 class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
   String? _selectedGrade; // null = All Grades
+  String? _displayedShareLink;
   bool _exporting = false;
   final _exportService = ExportService();
 
@@ -1163,23 +1165,10 @@ class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
       url += '?grade=$_selectedGrade';
     }
 
-    Clipboard.setData(ClipboardData(text: url));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('Public leaderboard link copied!\n$url',
-                  style: const TextStyle(color: Colors.white, fontSize: 12)),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    setState(() {
+      _displayedShareLink = url;
+    });
+    copyTextRobust(context, url);
   }
 
   @override
@@ -1233,19 +1222,50 @@ class _LeaderboardTabState extends ConsumerState<_LeaderboardTab> {
                 ],
               );
             }
-            return Row(
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SizedBox(width: 200, child: _buildGradeDropdown()),
-                const SizedBox(width: 16),
                 _buildExcelButton(resultsAsync),
-                const SizedBox(width: 8),
                 _buildPdfButton(resultsAsync),
-                const SizedBox(width: 8),
                 _buildShareButton(),
               ],
             );
           },
         ),
+        if (_displayedShareLink != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    _displayedShareLink!,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                  onPressed: () => copyTextRobust(context, _displayedShareLink!),
+                  tooltip: 'Copy to clipboard',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => setState(() => _displayedShareLink = null),
+                  tooltip: 'Hide link',
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
 
         // Results list

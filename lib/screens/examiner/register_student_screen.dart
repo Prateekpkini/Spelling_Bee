@@ -7,6 +7,7 @@ import 'package:spelling_bee/models/student.dart';
 import 'package:spelling_bee/providers/student_provider.dart';
 import 'package:spelling_bee/widgets/glass_scaffold.dart';
 import 'package:spelling_bee/widgets/glass_container.dart';
+import 'package:spelling_bee/widgets/link_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:universal_html/html.dart' as html;
 
@@ -96,16 +97,7 @@ class _RegisterStudentScreenState extends ConsumerState<RegisterStudentScreen> {
 
   void _copyLink() {
     if (_generatedLink == null) return;
-    Clipboard.setData(ClipboardData(text: _generatedLink!));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Game link copied to clipboard!',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.green,
-      ),
-    );
+    showLinkDialog(context, title: 'Game Link', link: _generatedLink!);
   }
 
   void _resetForm() {

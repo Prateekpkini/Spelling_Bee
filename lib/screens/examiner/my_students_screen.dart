@@ -200,15 +200,28 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
             child: const Text('Close', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton.icon(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Link copied to clipboard!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.of(context).pop();
+            onPressed: () async {
+              try {
+                await Clipboard.setData(ClipboardData(text: link));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Link copied to clipboard!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  Navigator.of(context).pop();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not copy automatically. Please copy the text manually.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             icon: const Icon(Icons.copy, size: 16),
             label: const Text('Copy Link'),
