@@ -170,7 +170,7 @@ router.get('/students', authenticateToken, requireExaminer, async (req, res) => 
 router.put('/students/:id/regenerate_token', authenticateToken, requireExaminer, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Ensure student belongs to the examiner
     const [existing] = await pool.execute('SELECT id FROM students WHERE id = ? AND examiner_id = ?', [id, req.user.userId]);
     if (existing.length === 0) {
@@ -178,12 +178,12 @@ router.put('/students/:id/regenerate_token', authenticateToken, requireExaminer,
     }
 
     const token = uuidv4().replace(/-/g, '');
-    
+
     await pool.execute(
       `UPDATE students SET token = ?, token_status = 'active' WHERE id = ?`,
       [token, id]
     );
-    
+
     res.json({ message: 'Token regenerated successfully', token });
   } catch (err) {
     console.error('Regenerate token error:', err);
