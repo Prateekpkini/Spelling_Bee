@@ -215,7 +215,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         gameState.currentWordIndex != _lastSpokenIndex &&
         gameState.feedback == null) {
       _lastSpokenIndex = gameState.currentWordIndex;
-      _ttsService.speak(gameState.currentWord!.spellingBritish);
+      _ttsService.speakWord(gameState.currentWord!.spellingBritish);
     }
   }
 
@@ -469,7 +469,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               width: double.infinity,
               height: isCompact ? 38 : 46,
               child: ElevatedButton.icon(
-                onPressed: () => _ttsService.speak(word.spellingBritish),
+                onPressed: () => _ttsService.speakWord(word.spellingBritish),
                 icon: Icon(Icons.volume_up_rounded, size: isCompact ? 22 : 28),
                 label: Text('Pronounce Word', style: TextStyle(fontSize: isCompact ? 16 : 18)),
                 style: ElevatedButton.styleFrom(
@@ -494,12 +494,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
           ),
           SizedBox(height: isCompact ? 6 : 10),
 
-          // Meaning
+          // Meaning – with speaker button
           _GlassInfoLabel(
             icon: Icons.menu_book_rounded,
             label: 'Meaning',
             value: word.meaning,
             isCompact: isCompact,
+            onSpeakerTap: () => _ttsService.speakMeaning(word.meaning),
           ),
           SizedBox(height: isCompact ? 6 : 10),
 
@@ -1056,6 +1057,7 @@ class _GlassInfoLabel extends StatelessWidget {
   final String value;
   final bool highlight;
   final bool isCompact;
+  final VoidCallback? onSpeakerTap;
 
   const _GlassInfoLabel({
     required this.icon,
@@ -1063,6 +1065,7 @@ class _GlassInfoLabel extends StatelessWidget {
     required this.value,
     this.highlight = false,
     this.isCompact = false,
+    this.onSpeakerTap,
   });
 
   @override
@@ -1084,14 +1087,21 @@ class _GlassInfoLabel extends StatelessWidget {
             children: [
               Icon(icon, size: isCompact ? 12 : 14, color: _GC.textDim),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: isCompact ? 10 : 11,
-                  fontWeight: FontWeight.w600,
-                  color: _GC.textDim,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isCompact ? 10 : 11,
+                    fontWeight: FontWeight.w600,
+                    color: _GC.textDim,
+                  ),
                 ),
               ),
+              if (onSpeakerTap != null)
+                _MeaningSpeakerButton(
+                  onTap: onSpeakerTap!,
+                  isCompact: isCompact,
+                ),
             ],
           ),
           SizedBox(height: isCompact ? 4 : 6),
@@ -1108,6 +1118,101 @@ class _GlassInfoLabel extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Animated speaker button for the meaning row.
+class _MeaningSpeakerButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final bool isCompact;
+
+  const _MeaningSpeakerButton({required this.onTap, this.isCompact = false});
+
+  @override
+  State<_MeaningSpeakerButton> createState() => _MeaningSpeakerButtonState();
+}
+
+class _MeaningSpeakerButtonState extends State<_MeaningSpeakerButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulseAnim;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.18).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    widget.onTap();
+    setState(() => _isPlaying = true);
+    _pulseCtrl.repeat(reverse: true);
+    // Stop the animation after a reasonable duration
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) {
+        _pulseCtrl.stop();
+        _pulseCtrl.reset();
+        setState(() => _isPlaying = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.isCompact ? 28.0 : 32.0;
+    final iconSize = widget.isCompact ? 16.0 : 20.0;
+
+    return GestureDetector(
+      onTap: _handleTap,
+      child: AnimatedBuilder(
+        animation: _pulseAnim,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _isPlaying ? _pulseAnim.value : 1.0,
+            child: child,
+          );
+        },
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: _GC.gold.withOpacity(_isPlaying ? 0.25 : 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _GC.gold.withOpacity(_isPlaying ? 0.5 : 0.3),
+              width: 1,
+            ),
+            boxShadow: _isPlaying
+                ? [
+                    BoxShadow(
+                      color: _GC.gold.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: -1,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            _isPlaying ? Icons.volume_up_rounded : Icons.volume_up_outlined,
+            size: iconSize,
+            color: _GC.gold,
+          ),
+        ),
       ),
     );
   }

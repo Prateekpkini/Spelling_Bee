@@ -8,20 +8,20 @@ import 'package:spelling_bee/models/student.dart';
 import 'package:spelling_bee/models/word.dart';
 
 class ApiService {
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'https://spelling-bee-pq86.onrender.com/api';
-    }
-    return 'https://spelling-bee-pq86.onrender.com/api';
-  }
-
   // static String get _baseUrl {
   //   if (kIsWeb) {
-  //     final host = html.window.location.hostname ?? 'localhost';
-  //     return 'http://$host:3000/api';
+  //     return 'https://spelling-bee-pq86.onrender.com/api';
   //   }
-  //   return 'http://10.86.6.243:3000/api';
+  //   return 'https://spelling-bee-pq86.onrender.com/api';
   // }
+
+  static String get _baseUrl {
+    if (kIsWeb) {
+      final host = html.window.location.hostname ?? 'localhost';
+      return 'http://$host:3000/api';
+    }
+    return 'http://10.86.6.243:3000/api';
+  }
 
   String? _jwtToken;
 
@@ -241,7 +241,8 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body)['error'] ?? 'Failed to delete student';
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to delete student';
       throw Exception(error);
     }
   }
@@ -251,10 +252,7 @@ class ApiService {
     if (grade != null && grade.isNotEmpty) {
       url += '?grade=$grade';
     }
-    final response = await http.get(
-      Uri.parse(url),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse(url), headers: _headers);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body)['results'];
@@ -426,7 +424,8 @@ class ApiService {
 
     if (response.statusCode != 201) {
       final error =
-          jsonDecode(response.body)['error'] ?? 'Failed to submit offline result';
+          jsonDecode(response.body)['error'] ??
+          'Failed to submit offline result';
       throw Exception(error);
     }
   }
@@ -446,4 +445,3 @@ class ApiService {
 
 // Global instance for now, can be provided via Riverpod later
 final apiService = ApiService();
-
