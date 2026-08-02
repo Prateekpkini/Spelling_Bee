@@ -8,20 +8,20 @@ import 'package:spelling_bee/models/student.dart';
 import 'package:spelling_bee/models/word.dart';
 
 class ApiService {
-  // static String get _baseUrl {
-  //   if (kIsWeb) {
-  //     return 'https://spelling-bee-pq86.onrender.com/api';
-  //   }
-  //   return 'https://spelling-bee-pq86.onrender.com/api';
-  // }
-
   static String get _baseUrl {
     if (kIsWeb) {
-      final host = html.window.location.hostname ?? 'localhost';
-      return 'http://$host:3000/api';
+      return 'https://spelling-bee-e3vb.onrender.com/api';
     }
-    return 'http://10.86.6.243:3000/api';
+    return 'https://spelling-bee-e3vb.onrender.com/api';
   }
+
+  // static String get _baseUrl {
+  //   if (kIsWeb) {
+  //     final host = html.window.location.hostname ?? 'localhost';
+  //     return 'http://$host:3000/api';
+  //   }
+  //   return 'http://10.86.6.243:3000/api';
+  // }
 
   String? _jwtToken;
 
