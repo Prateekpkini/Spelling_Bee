@@ -8,12 +8,7 @@ import 'package:spelling_bee/models/student.dart';
 import 'package:spelling_bee/models/word.dart';
 
 class ApiService {
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'https://spelling-bee-e3vb.onrender.com/api';
-    }
-    return 'https://spelling-bee-e3vb.onrender.com/api';
-  }
+  static const String _baseUrl = 'https://spelling-bee-e3vb.onrender.com/api';
 
   // static String get _baseUrl {
   //   if (kIsWeb) {
